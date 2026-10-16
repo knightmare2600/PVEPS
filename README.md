@@ -1,29 +1,74 @@
 # PVEPS
-Powershell functions to interact with Proxmox VE REST API
 
-Work in progress, needs work on login ticket refreshing, otherwise most commands work fin with pipeline options between them.
+PowerShell module for managing Proxmox VE through its REST API, in the style of VMware PowerCLI.
 
-Example commands,
+Originally written by Einar Stenberg (2018). Version 2 is a rewrite for PowerShell 7 and Proxmox VE 9.x,
+and is a clean break from the v1 cmdlets.
 
-Connect-PVE -hostname 192.168.0.123 -Username "root@pam" -Password "topsecret" -SSLValidationdisable
-$PVETicket.data.ticket
+> **Status:** work in progress. Phase 0 (connection, authentication, request handling, tasks) is in
+> place. VM inventory, power, lifecycle, hardware, snapshot, guest-agent, storage/backup and statistics
+> cmdlets follow in later phases.
 
+## Requirements
 
+- PowerShell 7.4 or later, on Linux, macOS or Windows
+- Proxmox VE 9.x
 
-Get-PVEVM -vmid 105 | Set-PVEVM -Start -Verbose
-Get-PVEVM -vmid 105 | Set-PVEVM -Stop -Verbose
-Get-PVEVM -vmid 105 | Set-PVEVM -reset -Verbose
-Get-PVEVM -vmid 105 | Set-PVEVM -Shutdown -Verbose
+## Getting started
 
+```powershell
+Import-Module ./PVEPS.psd1
 
+# Username and password (ticket authentication). The realm is required.
+Connect-PVE -Server pve01.example.com -Credential (Get-Credential root@pam)
 
-Get-PVECT -vmid 154
-Get-PVEvm -vmid 260
+# API token: UserName is the full token ID, password is the token secret.
+$token = Get-Credential -UserName 'automation@pve!pveps' -Message 'Token secret'
+Connect-PVE -Server 192.0.2.10 -ApiToken $token -SkipCertificateCheck
+```
 
-Get-PVEct | get-pvenode
-Get-PVEVM | get-pvenode
+`-SkipCertificateCheck` applies only to that connection. It is needed for the self-signed certificate
+that a fresh PVE install uses.
 
-Get-PVENode | Get-PVEct
-Get-PVENode | Get-PVEVM
+With ticket authentication, the module renews the ticket automatically before its two-hour lifetime
+runs out. Users with two-factor authentication enabled must use an API token.
 
-Connect-PVE -Renew
+## Cmdlets
+
+| Cmdlet | Purpose |
+|---|---|
+| `Connect-PVE` | Open a connection; the newest becomes the default unless `-NotDefault` is given |
+| `Disconnect-PVE` | Close a connection (`-Server *` closes them all) |
+| `Get-PVEConnection` | List open connections |
+| `Get-PVETask` | Recent cluster tasks, a node's task list, or one task by UPID |
+| `Wait-PVETask` | Wait for tasks to finish; failed tasks become errors |
+| `Invoke-PVEApi` | Call any API endpoint directly, for anything not yet wrapped |
+
+Every cmdlet takes `-Server` (a connection object or a server name) and defaults to the default
+connection. Objects carry the connection they came from, so pipelines work across servers.
+
+```powershell
+Get-PVETask -Node pve01 -Source all -Limit 10
+Invoke-PVEApi -Path /cluster/resources -Parameters @{ type = 'vm' }
+Invoke-PVEApi -Method POST -Path /nodes/pve01/qemu/9001/status/start -WhatIf
+```
+
+## Tests
+
+```powershell
+# Unit tests: offline, the HTTP layer is mocked.
+Invoke-Pester ./tests -ExcludeTagFilter Integration
+
+# Integration tests: read-only, run against a real server.
+$env:PVEPS_TEST_SERVER = 'pve01.example.com'
+$env:PVEPS_TEST_TOKEN_ID = 'pveps@pve!readonly'
+$env:PVEPS_TEST_TOKEN_SECRET = '...'
+$env:PVEPS_TEST_SKIPCERT = '1'
+Invoke-Pester ./tests -TagFilter Integration -Output Detailed
+```
+
+The header of `tests/Integration/Connection.Integration.Tests.ps1` lists every variable it reads.
+
+## Licence
+
+GPLv3. See [LICENSE](LICENSE).
