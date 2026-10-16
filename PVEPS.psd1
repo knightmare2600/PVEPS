@@ -19,6 +19,17 @@
     'Get-PVETask'
     'Get-PVEVM'
     'Invoke-PVEApi'
+    'Restart-PVEContainer'
+    'Restart-PVEVM'
+    'Restart-PVEVMGuest'
+    'Resume-PVEVM'
+    'Start-PVEContainer'
+    'Start-PVEVM'
+    'Stop-PVEContainer'
+    'Stop-PVEContainerGuest'
+    'Stop-PVEVM'
+    'Stop-PVEVMGuest'
+    'Suspend-PVEVM'
     'Wait-PVETask'
   )
   CmdletsToExport      = @()

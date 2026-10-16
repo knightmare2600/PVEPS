@@ -17,6 +17,8 @@
 #        PowerCLI-style in later phases; see git history for the v1 code.
 #v2.0.0  2026-10-16  RM  Phase 1 inventory: Get-PVENode, Get-PVEVM, Get-PVEContainer, Get-PVEStorage,
 #        Get-PVEPool. Connect-PVE takes -User/-Password by default, with -Token for API tokens.
+#v2.0.0  2026-10-16  RM  Phase 2 power: Start/Stop/Restart/Suspend/Resume-PVEVM, Stop/Restart-PVEVMGuest,
+#        Start/Stop/Restart-PVEContainer, Stop-PVEContainerGuest. Decisions use live guest status.
 #
 #--------------------------------------------------------------------------------------------------------------
 
