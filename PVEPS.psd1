@@ -12,7 +12,12 @@
     'Connect-PVE'
     'Disconnect-PVE'
     'Get-PVEConnection'
+    'Get-PVEContainer'
+    'Get-PVENode'
+    'Get-PVEPool'
+    'Get-PVEStorage'
     'Get-PVETask'
+    'Get-PVEVM'
     'Invoke-PVEApi'
     'Wait-PVETask'
   )

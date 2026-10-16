@@ -5,9 +5,10 @@ PowerShell module for managing Proxmox VE through its REST API, in the style of 
 Originally written by Einar Stenberg (2018). Version 2 is a rewrite for PowerShell 7 and Proxmox VE 9.x,
 and is a clean break from the v1 cmdlets.
 
-> **Status:** work in progress. Phase 0 (connection, authentication, request handling, tasks) is in
-> place. VM inventory, power, lifecycle, hardware, snapshot, guest-agent, storage/backup and statistics
-> cmdlets follow in later phases.
+> **Status:** work in progress. Phase 0 (connection, authentication, request handling, tasks) and
+> Phase 1 (inventory) are in place. Power, lifecycle, hardware, snapshot, guest-agent, storage/backup and
+> statistics cmdlets follow in later phases. Clustered PVE is not yet supported; development and testing
+> target a standalone node.
 
 ## Requirements
 
@@ -49,12 +50,23 @@ runs out. Users with two-factor authentication enabled must use an API token.
 | `Get-PVEConnection` | List open connections |
 | `Get-PVETask` | Recent cluster tasks, a node's task list, or one task by UPID |
 | `Wait-PVETask` | Wait for tasks to finish; failed tasks become errors |
+| `Get-PVENode` | Nodes, with PVE version, kernel and CPU model |
+| `Get-PVEVM` | QEMU VMs by name (wildcards), ID or node; templates only with `-IncludeTemplate` |
+| `Get-PVEContainer` | LXC containers, with the same filters as `Get-PVEVM` |
+| `Get-PVEStorage` | Storage per node, with capacity; filter by name or `-Content` |
+| `Get-PVEPool` | Resource pools and their members |
 | `Invoke-PVEApi` | Call any API endpoint directly, for anything not yet wrapped |
 
 Every cmdlet takes `-Server` (a connection object or a server name) and defaults to the default
 connection. Objects carry the connection they came from, so pipelines work across servers.
 
+As with PowerCLI, asking for a specific name or ID that does not exist writes a "not found" error, while
+a wildcard that matches nothing returns nothing quietly.
+
 ```powershell
+Get-PVEVM -Name 'web*'
+Get-PVENode pve01 | Get-PVEContainer
+Get-PVEStorage -Content iso
 Get-PVETask -Node pve01 -Source all -Limit 10
 Invoke-PVEApi -Path /cluster/resources -Parameters @{ type = 'vm' }
 Invoke-PVEApi -Method POST -Path /nodes/pve01/qemu/9001/status/start -WhatIf

@@ -5,7 +5,9 @@ function Get-PVEValue {
   .DESCRIPTION
   The module runs under Set-StrictMode -Version 3.0, where reading a property that does not exist throws.
   The PVE API omits optional fields entirely rather than sending null, so every read of API data goes
-  through this function. Array values are returned intact (not unrolled).
+  through this function. Array values are returned intact (not unrolled), as a single object: assign the
+  result to a variable before wrapping it in @(), because @(Get-PVEValue ...) gives an array containing
+  the array.
   #>
   [CmdletBinding()]
   [OutputType([object], [object[]], [array])]

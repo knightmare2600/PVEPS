@@ -15,6 +15,8 @@
 #        automatic ticket renewal and per-connection certificate handling. Task cmdlets added. The v1
 #        cmdlets (Get-PVEVM, Get-PVECT, Get-PVENode, Set-PVEVM) are removed and will be re-implemented
 #        PowerCLI-style in later phases; see git history for the v1 code.
+#v2.0.0  2026-10-16  RM  Phase 1 inventory: Get-PVENode, Get-PVEVM, Get-PVEContainer, Get-PVEStorage,
+#        Get-PVEPool. Connect-PVE takes -User/-Password by default, with -Token for API tokens.
 #
 #--------------------------------------------------------------------------------------------------------------
 
