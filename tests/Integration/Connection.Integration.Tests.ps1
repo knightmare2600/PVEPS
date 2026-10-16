@@ -32,7 +32,7 @@ BeforeAll {
 Describe 'API token connection' -Tag 'Integration' -Skip:(-not $script:HaveToken) {
   BeforeAll {
     $token = [pscredential]::new($env:PVEPS_TEST_TOKEN_ID, (ConvertTo-SecureString -String $env:PVEPS_TEST_TOKEN_SECRET -AsPlainText -Force))
-    $script:Conn = Connect-PVE @script:Common -ApiToken $token
+    $script:Conn = Connect-PVE @script:Common -Credential $token -Token
   }
 
   AfterAll {

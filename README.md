@@ -19,13 +19,20 @@ and is a clean break from the v1 cmdlets.
 ```powershell
 Import-Module ./PVEPS.psd1
 
-# Username and password (ticket authentication). The realm is required.
-Connect-PVE -Server pve01.example.com -Credential (Get-Credential root@pam)
+# Username and password (the default). The realm is required. Omit -Password to be prompted.
+Connect-PVE -Server pve01.example.com -User root@pam
+Connect-PVE -Server pve01.example.com -User root@pam -Password 'secret'
 
-# API token: UserName is the full token ID, password is the token secret.
-$token = Get-Credential -UserName 'automation@pve!pveps' -Message 'Token secret'
-Connect-PVE -Server 192.0.2.10 -ApiToken $token -SkipCertificateCheck
+# API token: add -Token. The user is the full token ID, the password is the token secret.
+Connect-PVE -Server 192.0.2.10 -User 'automation@pve!pveps' -Token -SkipCertificateCheck
+
+# A PSCredential works for either.
+Connect-PVE -Server pve01.example.com -Credential (Get-Credential root@pam)
+Connect-PVE -Server pve01.example.com -Credential $tokenCredential -Token
 ```
+
+`-Password` accepts a plain string or a SecureString. A plain string typed at the prompt can end up in
+shell history, so in interactive use leave `-Password` out and type it at the hidden prompt.
 
 `-SkipCertificateCheck` applies only to that connection. It is needed for the self-signed certificate
 that a fresh PVE install uses.

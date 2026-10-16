@@ -48,7 +48,7 @@ function Update-PVEAuthTicket {
   $ticket = [string](Get-PVEValue $result 'ticket')
   $csrfToken = [string](Get-PVEValue $result 'CSRFPreventionToken')
   if ((Get-PVEValue $result 'NeedTFA') -or $ticket.Contains('!tfa!')) {
-    throw "User $userName has two-factor authentication enabled, which PVEPS does not support for interactive login. Use an API token instead (Connect-PVE -ApiToken)."
+    throw "User $userName has two-factor authentication enabled, which PVEPS does not support for interactive login. Use an API token instead (Connect-PVE -Token)."
   }
   if (-not $ticket -or -not $csrfToken) {
     throw "Login to $($Connection.Server) as $userName did not return a ticket and CSRF token."

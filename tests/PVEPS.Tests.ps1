@@ -259,6 +259,61 @@ Describe 'Connect-PVE' {
     (Get-PVEConnection -Default).Id | Should -Be $conn.Id
   }
 
+  It 'defaults to the user name and password parameter set' {
+    (Get-Command Connect-PVE).DefaultParameterSet | Should -Be 'UserPassword'
+  }
+
+  It 'accepts -User with a plain-string -Password' {
+    $conn = Connect-PVE -Server pve01 -User root@pam -Password 'p@ss word&='
+    $script:Fake.Calls[0].Body | Should -Be 'password=p%40ss%20word%26%3D&username=root%40pam'
+    $conn.AuthType | Should -Be 'Ticket'
+    $conn.User | Should -Be 'root@pam'
+  }
+
+  It 'accepts -User with a SecureString -Password' {
+    $secure = ConvertTo-SecureString -String 'p@ss word&=' -AsPlainText -Force
+    $null = Connect-PVE -Server pve01 -User root@pam -Password $secure
+    $script:Fake.Calls[0].Body | Should -Be 'password=p%40ss%20word%26%3D&username=root%40pam'
+  }
+
+  It 'accepts -Username as an alias for -User' {
+    $conn = Connect-PVE -Server pve01 -Username root@pam -Password 'x'
+    $conn.User | Should -Be 'root@pam'
+  }
+
+  It 'prompts for the password without echoing when -Password is omitted' {
+    Mock -ModuleName PVEPS Read-Host { ConvertTo-SecureString -String 'prompted' -AsPlainText -Force }
+    $null = Connect-PVE -Server pve01 -User root@pam
+    Should -Invoke -ModuleName PVEPS Read-Host -Times 1 -Exactly -ParameterFilter { $AsSecureString -and $Prompt -eq 'Password for root@pam' }
+    $script:Fake.Calls[0].Body | Should -Be 'password=prompted&username=root%40pam'
+  }
+
+  It 'prompts for the token secret when -Token is given without -Password' {
+    Mock -ModuleName PVEPS Read-Host { ConvertTo-SecureString -String 'sekrit' -AsPlainText -Force }
+    $null = Connect-PVE -Server pve01 -User 'automation@pve!pveps' -Token
+    Should -Invoke -ModuleName PVEPS Read-Host -Times 1 -Exactly -ParameterFilter { $Prompt -eq 'Token secret for automation@pve!pveps' }
+    $script:Fake.Calls[0].Headers['Authorization'] | Should -Be 'PVEAPIToken=automation@pve!pveps=sekrit'
+  }
+
+  It 'rejects a -Password that is neither a string nor a SecureString' {
+    { Connect-PVE -Server pve01 -User root@pam -Password 42 } | Should -Throw '*string or a SecureString*'
+  }
+
+  It 'rejects an empty password and an empty token secret' {
+    { Connect-PVE -Server pve01 -User root@pam -Password '' } | Should -Throw '*Password is empty*'
+    { Connect-PVE -Server pve01 -Credential ([pscredential]::new('a@pve!t1', [securestring]::new())) -Token } | Should -Throw '*Token secret is empty*'
+    $script:Fake.Calls.Count | Should -Be 0
+  }
+
+  It 'points out a token ID used without -Token' {
+    { Connect-PVE -Server pve01 -User 'automation@pve!pveps' -Password 'x' } | Should -Throw '*Add -Token*'
+    $script:Fake.Calls.Count | Should -Be 0
+  }
+
+  It 'rejects -User together with -Credential' {
+    { Connect-PVE -Server pve01 -User root@pam -Credential (New-TestCredential) } | Should -Throw '*Parameter set cannot be resolved*'
+  }
+
   It 'never exposes secrets on the connection object' {
     $conn = Connect-PVE -Server pve01 -Credential (New-TestCredential)
     $json = $conn | ConvertTo-Json -Depth 5
@@ -268,7 +323,7 @@ Describe 'Connect-PVE' {
 
   It 'authenticates with an API token header and makes no ticket request' {
     $token = New-TestCredential -User 'automation@pve!pveps' -Secret '0b1c2d3e-aaaa-bbbb-cccc-123456789abc'
-    $conn = Connect-PVE -Server pve01 -ApiToken $token -SkipCertificateCheck
+    $conn = Connect-PVE -Server pve01 -Credential $token -Token -SkipCertificateCheck
 
     $script:Fake.Calls.Count | Should -Be 1
     $script:Fake.Calls[0].Path | Should -Be '/version'
@@ -293,7 +348,7 @@ Describe 'Connect-PVE' {
   }
 
   It 'rejects a malformed token ID' {
-    { Connect-PVE -Server pve01 -ApiToken (New-TestCredential -User 'automation@pve') } | Should -Throw '*user@realm!tokenname*'
+    { Connect-PVE -Server pve01 -Credential (New-TestCredential -User 'automation@pve') -Token } | Should -Throw '*user@realm!tokenname*'
   }
 
   It 'leaves the default alone with -NotDefault' {
@@ -458,7 +513,7 @@ Describe 'Invoke-PVERequest behaviour (through Invoke-PVEApi)' {
 
   It 'does not retry API token requests on 401' {
     Reset-FakeState
-    $null = Connect-PVE -Server pve01 -ApiToken (New-TestCredential -User 'a@pve!t1' -Secret 's')
+    $null = Connect-PVE -Server pve01 -User 'a@pve!t1' -Password 's' -Token
     $script:Fake.Calls.Clear()
     $script:Fake.Handler = { param($Method, $Path) New-FakeResponse -Status 401 -Reason 'invalid token value' -Data $null }
     { Invoke-PVEApi -Path /nodes -ErrorAction Stop } | Should -Throw '*invalid token value*'
