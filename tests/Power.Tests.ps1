@@ -144,7 +144,7 @@ Describe 'Start-PVEVM' {
     $r = Invoke-Streams { Start-PVEVM -VMId 100 }
     (Get-PowerPost).Count | Should -Be 0
     $r.Warnings.Count | Should -Be 1
-    $r.Warnings[0].Message | Should -Be 'VM 100 (web01) on pve is already running; skipped start.'
+    $r.Warnings[0].Message | Should -Be "VM 100 (web01) on pve is already running; 'Start' skipped."
     $r.Output.VMId | Should -Be 100
   }
 
@@ -257,7 +257,7 @@ Describe 'Stop and other actions' {
   It 'skips stopping a stopped VM with a warning' {
     $r = Invoke-Streams { Stop-PVEVMGuest -VMId 101 -Confirm:$false }
     (Get-PowerPost).Count | Should -Be 0
-    $r.Warnings[0].Message | Should -Be 'VM 101 (db01) on pve is stopped; skipped shut down guest os.'
+    $r.Warnings[0].Message | Should -Be "VM 101 (db01) on pve is stopped; 'Shut down guest OS' skipped."
   }
 
   It 'sends Resume-PVEVM regardless of status and lets PVE decide' {

@@ -79,6 +79,12 @@ Describe 'Get-PVEVM' {
     Initialize-Inventory
   }
 
+  It 'leaves Uptime blank in the table for a stopped VM (uptime 0)' {
+    $vm = Get-PVEVM -VMId 101
+    $vm.Uptime | Should -Be ([timespan]::Zero)
+    ($vm | Format-Table | Out-String) | Should -Not -Match '0d 00:00'
+  }
+
   It 'reads all guests in a single /cluster/resources call' {
     $null = Get-PVEVM
     $script:Fake.Calls.Count | Should -Be 1

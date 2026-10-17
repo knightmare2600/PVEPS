@@ -86,7 +86,7 @@
               <TableColumnItem><PropertyName>CpuUsagePercent</PropertyName></TableColumnItem>
               <TableColumnItem><PropertyName>MemoryUsedGB</PropertyName></TableColumnItem>
               <TableColumnItem><PropertyName>MemoryTotalGB</PropertyName></TableColumnItem>
-              <TableColumnItem><ScriptBlock>if ($_.Uptime) { '{0}d {1:hh\:mm}' -f $_.Uptime.Days, $_.Uptime }</ScriptBlock></TableColumnItem>
+              <TableColumnItem><ScriptBlock>if ($_.Uptime -and $_.Uptime.Ticks -gt 0) { '{0}d {1:hh\:mm}' -f $_.Uptime.Days, $_.Uptime }</ScriptBlock></TableColumnItem>
               <TableColumnItem><PropertyName>Version</PropertyName></TableColumnItem>
             </TableColumnItems>
           </TableRowEntry>
@@ -120,7 +120,7 @@
               <TableColumnItem><PropertyName>Cpus</PropertyName></TableColumnItem>
               <TableColumnItem><PropertyName>MemoryGB</PropertyName></TableColumnItem>
               <TableColumnItem><PropertyName>DiskGB</PropertyName></TableColumnItem>
-              <TableColumnItem><ScriptBlock>if ($_.Uptime) { '{0}d {1:hh\:mm}' -f $_.Uptime.Days, $_.Uptime }</ScriptBlock></TableColumnItem>
+              <TableColumnItem><ScriptBlock>if ($_.Uptime -and $_.Uptime.Ticks -gt 0) { '{0}d {1:hh\:mm}' -f $_.Uptime.Days, $_.Uptime }</ScriptBlock></TableColumnItem>
               <TableColumnItem><ScriptBlock>$_.Tags -join ','</ScriptBlock></TableColumnItem>
             </TableColumnItems>
           </TableRowEntry>
@@ -154,7 +154,7 @@
               <TableColumnItem><PropertyName>Cpus</PropertyName></TableColumnItem>
               <TableColumnItem><PropertyName>MemoryGB</PropertyName></TableColumnItem>
               <TableColumnItem><PropertyName>DiskGB</PropertyName></TableColumnItem>
-              <TableColumnItem><ScriptBlock>if ($_.Uptime) { '{0}d {1:hh\:mm}' -f $_.Uptime.Days, $_.Uptime }</ScriptBlock></TableColumnItem>
+              <TableColumnItem><ScriptBlock>if ($_.Uptime -and $_.Uptime.Ticks -gt 0) { '{0}d {1:hh\:mm}' -f $_.Uptime.Days, $_.Uptime }</ScriptBlock></TableColumnItem>
               <TableColumnItem><ScriptBlock>$_.Tags -join ','</ScriptBlock></TableColumnItem>
             </TableColumnItems>
           </TableRowEntry>

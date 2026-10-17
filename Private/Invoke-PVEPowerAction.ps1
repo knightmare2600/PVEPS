@@ -68,12 +68,12 @@ function Invoke-PVEPowerAction {
     }
 
     if ($RequiredStatus -eq 'running' -and $guest.Status -ne 'running') {
-      Write-Warning "$label is $($guest.Status); skipped $($Description.ToLowerInvariant())."
+      Write-Warning "$label is $($guest.Status); '$Description' skipped."
       $guest
       continue
     }
     if ($RequiredStatus -eq 'stopped' -and $guest.Status -eq 'running') {
-      Write-Warning "$label is already running; skipped $($Description.ToLowerInvariant())."
+      Write-Warning "$label is already running; '$Description' skipped."
       $guest
       continue
     }

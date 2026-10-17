@@ -54,7 +54,7 @@ function Invoke-PVEGuestOperation {
     $label = Get-PVEGuestLabel -Guest $item
 
     if ($SkipTemplate -and $item.IsTemplate) {
-      Write-Warning "$label is already a template; skipped $($Description.ToLowerInvariant())."
+      Write-Warning "$label is already a template; '$Description' skipped."
       $item
       continue
     }
