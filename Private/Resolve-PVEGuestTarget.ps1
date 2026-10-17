@@ -9,6 +9,10 @@ function Resolve-PVEGuestTarget {
 
   An ID names exactly one guest, so it matches templates too. A name matches templates only with
   -IncludeTemplate, so a wildcard such as 'web*' does not sweep up templates by accident.
+
+  With -PassTarget, writes one { Guest; Target } pair per target and matching guest instead, without
+  removing duplicates, so device cmdlets can tell which devices were asked for on which guest. Pairs
+  for the same guest share the same guest object.
   #>
   [CmdletBinding()]
   [OutputType([psobject])]
@@ -24,7 +28,9 @@ function Resolve-PVEGuestTarget {
     [AllowEmptyCollection()]
     [System.Collections.Generic.List[psobject]]$Target,
 
-    [switch]$IncludeTemplate
+    [switch]$IncludeTemplate,
+
+    [switch]$PassTarget
   )
 
   $kind = if ($Type -eq 'qemu') { 'VM' } else { 'Container' }
@@ -68,6 +74,10 @@ function Resolve-PVEGuestTarget {
       }
 
       foreach ($guest in $found) {
+        if ($PassTarget) {
+          [pscustomobject]@{ Guest = $guest; Target = $item }
+          continue
+        }
         if ($seen.Add(('{0}/{1}' -f $connection.Id, $guest.VMId))) {
           $guest
         }

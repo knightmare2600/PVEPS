@@ -17,8 +17,7 @@ function Get-PVEGuestVolume {
     [psobject]$Guest
   )
 
-  $path = Format-PVEPath '/nodes/{node}/{type}/{vmid}/config' @{ node = $Guest.Node; type = $Guest.Type; vmid = $Guest.VMId }
-  $config = Invoke-PVERequest -Connection $Guest.Connection -Path $path
+  $config = Get-PVEGuestConfig -Guest $Guest
   if ($Guest.Type -eq 'lxc') {
     $pattern = '^(rootfs|mp\d+)$'
     $defaultKey = 'volume'
@@ -28,8 +27,7 @@ function Get-PVEGuestVolume {
     $defaultKey = 'file'
   }
 
-  $properties = if ($null -eq $config) { @() } elseif ($config -is [System.Collections.IDictionary]) { @($config.Keys) } else { @($config.PSObject.Properties.Name) }
-  foreach ($key in ($properties | Where-Object { $_ -match $pattern } | Sort-Object)) {
+  foreach ($key in (Get-PVEConfigKey -Config $config | Where-Object { $_ -match $pattern } | Sort-Object)) {
     $option = ConvertFrom-PVEPropertyString -Value ([string](Get-PVEValue $config $key)) -DefaultKey $defaultKey
     $volume = [string]$option[$defaultKey]
     if ($option['media'] -eq 'cdrom' -or $volume -eq 'none' -or $volume.StartsWith('/') -or $volume -notmatch '^[^:]+:') {

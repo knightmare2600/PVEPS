@@ -22,6 +22,9 @@
 #v2.0.0  2026-10-17  RM  Phase 3 lifecycle: New/Set/Copy/Move/Remove-PVEVM and -PVEContainer,
 #        ConvertTo-PVEVMTemplate, ConvertTo-PVEContainerTemplate. Output objects now take name, tags,
 #        CPU and memory from the live status endpoint.
+#v2.0.0  2026-10-17  RM  Phase 4 hardware: Get/New/Set/Remove-PVEVMHardDisk, -PVEVMNetworkAdapter, -PVEVMCDDrive,
+#        Get/Set-PVEVMCloudInit, Get/New/Set/Remove-PVEContainerVolume and -PVEContainerNetworkAdapter.
+#        Configuration changes send the digest of the configuration they were built from.
 #
 #--------------------------------------------------------------------------------------------------------------
 

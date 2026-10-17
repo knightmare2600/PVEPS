@@ -34,6 +34,39 @@ Describe 'Module' {
     ($findings | Where-Object { $_ } | ForEach-Object { '{0}:{1} {2}' -f $_.ScriptName, $_.Line, $_.RuleName }) | Should -BeNullOrEmpty
   }
 
+  It 'has no function that assigns to one of its own parameters, except the deliberate cases' {
+    # PowerShell variable names are case-insensitive, so a local $index silently overwrites (and re-runs
+    # the validation of) a parameter named -Index. Each allowed case below is a deliberate normalisation.
+    $allowed = @(
+      'Connect-PVE:password', 'Connect-PVE:credential', 'Connect-PVE:user'
+      'Invoke-PVERequest:path', 'Get-PVEGuestDevice:config'
+    )
+    $found = foreach ($file in Get-ChildItem (Join-Path $script:ModuleRoot 'Public'), (Join-Path $script:ModuleRoot 'Private') -Filter *.ps1) {
+      $ast = [System.Management.Automation.Language.Parser]::ParseFile($file.FullName, [ref]$null, [ref]$null)
+      foreach ($fn in $ast.FindAll({ $args[0] -is [System.Management.Automation.Language.FunctionDefinitionAst] }, $true)) {
+        $params = @($fn.Body.ParamBlock.Parameters | ForEach-Object { $_.Name.VariablePath.UserPath.ToLowerInvariant() })
+        $assignments = $fn.Body.FindAll({
+            $args[0] -is [System.Management.Automation.Language.AssignmentStatementAst] -or
+            $args[0] -is [System.Management.Automation.Language.ForEachStatementAst]
+          }, $true)
+        foreach ($assignment in $assignments) {
+          $variable = if ($assignment -is [System.Management.Automation.Language.ForEachStatementAst]) { $assignment.Variable } else { $assignment.Left }
+          if ($variable -is [System.Management.Automation.Language.ConvertExpressionAst]) {
+            $variable = $variable.Child
+          }
+          if ($variable -isnot [System.Management.Automation.Language.VariableExpressionAst]) {
+            continue
+          }
+          $name = $variable.VariablePath.UserPath.ToLowerInvariant()
+          if ($name -in $params -and "$($fn.Name):$name" -notin $allowed) {
+            '{0}:{1} ${2}' -f $file.Name, $variable.Extent.StartLineNumber, $name
+          }
+        }
+      }
+    }
+    $found | Should -BeNullOrEmpty
+  }
+
   It 'has comment-based help with a synopsis and an example for every public function' {
     foreach ($name in (Get-Command -Module PVEPS).Name) {
       $help = Get-Help $name -Full

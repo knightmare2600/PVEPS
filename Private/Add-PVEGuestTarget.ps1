@@ -1,8 +1,9 @@
 function Add-PVEGuestTarget {
   <#
   .SYNOPSIS
-  Collects -VMId / -Name targets from a power cmdlet's process block into a list, one entry per
-  connection and value, for Invoke-PVEPowerAction to resolve in the end block.
+  Collects -VMId / -Name targets from a cmdlet's process block into a list, one entry per connection
+  and value, for Resolve-PVEGuestTarget to resolve in the end block. Device cmdlets also pass -Device,
+  the device names (or patterns) given with that ID or name, which each entry carries.
   #>
   [CmdletBinding()]
   param(
@@ -20,7 +21,10 @@ function Add-PVEGuestTarget {
     [int[]]$VMId,
 
     [AllowNull()]
-    [string[]]$Name
+    [string[]]$Name,
+
+    [AllowNull()]
+    [string[]]$Device
   )
 
   try {
@@ -33,10 +37,10 @@ function Add-PVEGuestTarget {
 
   foreach ($connection in $connections) {
     foreach ($id in $VMId) {
-      $Target.Add([pscustomobject]@{ Connection = $connection; VMId = $id; Name = $null })
+      $Target.Add([pscustomobject]@{ Connection = $connection; VMId = $id; Name = $null; Device = $Device })
     }
     foreach ($item in $Name) {
-      $Target.Add([pscustomobject]@{ Connection = $connection; VMId = $null; Name = $item })
+      $Target.Add([pscustomobject]@{ Connection = $connection; VMId = $null; Name = $item; Device = $Device })
     }
   }
 }

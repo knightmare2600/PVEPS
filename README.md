@@ -6,8 +6,8 @@ Originally written by Einar Stenberg (2018). Version 2 is a rewrite for PowerShe
 and is a clean break from the v1 cmdlets.
 
 > **Status:** work in progress. Phase 0 (connection, authentication, request handling, tasks),
-> Phase 1 (inventory), Phase 2 (power) and Phase 3 (lifecycle) are in place. Hardware, snapshot,
-> guest-agent, storage/backup and statistics cmdlets follow in later phases. Clustered PVE is not yet
+> Phase 1 (inventory), Phase 2 (power), Phase 3 (lifecycle) and Phase 4 (hardware) are in place.
+> Snapshot, guest-agent, storage/backup and statistics cmdlets follow in later phases. Clustered PVE is not yet
 > supported; development and testing target a standalone node.
 
 ## Requirements
@@ -67,6 +67,12 @@ runs out. Users with two-factor authentication enabled must use an API token.
 | `ConvertTo-PVEVMTemplate` / `ConvertTo-PVEContainerTemplate` | Turn a stopped guest into a template |
 | `Move-PVEVM` / `Move-PVEContainer` | Move a guest's disks or volumes to another storage |
 | `Remove-PVEVM` / `Remove-PVEContainer` | Delete a stopped guest and its disks |
+| `Get/New/Set/Remove-PVEVMHardDisk` | List, add, grow or re-option, and detach or delete VM disks |
+| `Get/New/Set/Remove-PVEVMNetworkAdapter` | VM network adapters: bridge, model, MAC, VLAN, link state |
+| `Get/New/Set/Remove-PVEVMCDDrive` | VM CD drives; insert or eject ISOs |
+| `Get-PVEVMCloudInit` / `Set-PVEVMCloudInit` | cloud-init user, SSH keys, IP and DNS settings; adds the drive |
+| `Get/New/Set/Remove-PVEContainerVolume` | Container root file system and mount points (volumes or bind mounts) |
+| `Get/New/Set/Remove-PVEContainerNetworkAdapter` | Container network adapters and their addresses |
 | `Invoke-PVEApi` | Call any API endpoint directly, for anything not yet wrapped |
 
 Power cmdlets take names (wildcards allowed), `-VMId`, or piped objects. They wait for the PVE task to
@@ -80,6 +86,12 @@ not stopped, and ask for confirmation; set, clone and move do not, but honour `-
 wildcard matches templates only with `-IncludeTemplate`, so `Remove-PVEVM 'test*'` cannot delete a
 template by accident; an ID always does what it says. `Set-*` warns when a running guest has changes
 that PVE will only apply at the next start.
+
+Hardware cmdlets take a guest (`-VMId`, `-VMName`, or piped guest objects) and, to change or remove
+something, a `-Device` such as `scsi1`, `net0` or `mp0`; objects from the `Get-` cmdlets pipe straight
+in. Each change rewrites only the options named and sends the digest of the configuration it was built
+from, so PVE refuses it if the configuration changed in between. Removing a disk or mount point detaches
+it by default, keeping the volume as an unused disk; `-DeletePermanently` deletes it.
 
 Every cmdlet takes `-Server` (a connection object or a server name) and defaults to the default
 connection. Objects carry the connection they came from, so pipelines work across servers.
@@ -98,6 +110,9 @@ New-PVEVM web01 -Cores 2 -MemoryGB 4 -DiskGB 32 -Storage local-lvm -NetworkBridg
 Copy-PVEVM tmpl-debian13 -NewName web02 | Start-PVEVM
 Get-PVEVM 'web*' | Set-PVEVM -Tags web, production -StartOnBoot $true
 Move-PVEVM web01 -Storage fast-ssd -DeleteSource
+Get-PVEVM db01 | New-PVEVMHardDisk -SizeGB 200 -Storage local-lvm -SSD -Discard
+Set-PVEVMHardDisk -VMId 100 -Device scsi0 -SizeGB 64
+Set-PVEVMCloudInit -VMId 100 -User debian -SshPublicKey (Get-Content ~/.ssh/id_ed25519.pub) -IPAddress dhcp -Storage local-lvm
 Get-PVEVM 'scratch-*' | Stop-PVEVM -Confirm:$false | Remove-PVEVM -Purge -Confirm:$false
 Invoke-PVEApi -Path /cluster/resources -Parameters @{ type = 'vm' }
 Invoke-PVEApi -Method POST -Path /nodes/pve01/qemu/9001/status/start -WhatIf
@@ -114,7 +129,7 @@ $env:PVEPS_TEST_SERVER = 'pve01.example.com'
 $env:PVEPS_TEST_TOKEN_ID = 'pveps@pve!readonly'
 $env:PVEPS_TEST_TOKEN_SECRET = '...'
 $env:PVEPS_TEST_SKIPCERT = '1'
-Invoke-Pester ./tests -TagFilter Integration -ExcludeTagFilter Power, Lifecycle -Output Detailed
+Invoke-Pester ./tests -TagFilter Integration -ExcludeTagFilter Power, Lifecycle, Hardware -Output Detailed
 ```
 
 The read-only tests need a token with audit rights. With privilege separation a token gets the
@@ -130,11 +145,11 @@ The header of `tests/Integration/Connection.Integration.Tests.ps1` lists every v
 
 ### Write tests
 
-The power and lifecycle tests change state, so they use a separate token whose rights cover only a
-dedicated pool and the storage the tests use; PVE refuses anything else. These commands add to the
-`pveps@pve` user created above. The tests also refuse any guest
-not in that pool or not named `pveps-test*`. The lifecycle tests create every guest they touch and delete
-them again at the end. On the node, as root:
+The power, lifecycle and hardware tests change state, so they use a separate token whose rights cover
+only a dedicated pool and the storage the tests use; PVE refuses anything else. These commands add to
+the `pveps@pve` user created above. The tests also refuse any guest not in that pool or not named
+`pveps-test*`. The lifecycle and hardware tests create every guest they touch and delete them again at
+the end. On the node, as root:
 
 ```
 pveum pool add pveps-test --comment "PVEPS integration tests"
@@ -163,9 +178,10 @@ $env:PVEPS_TEST_WRITE_TOKEN_SECRET = Read-Host 'Write token secret' -MaskInput
 $env:PVEPS_TEST_POOL = 'pveps-test'
 $env:PVEPS_TEST_POWER_VMID = '9990'
 $env:PVEPS_TEST_STORAGE = 'local-lvm'
-# Optional: $env:PVEPS_TEST_STORAGE2, $env:PVEPS_TEST_BRIDGE, $env:PVEPS_TEST_CT_TEMPLATE
+# Optional: $env:PVEPS_TEST_STORAGE2, $env:PVEPS_TEST_BRIDGE, $env:PVEPS_TEST_CT_TEMPLATE, $env:PVEPS_TEST_ISO
 Invoke-Pester ./tests/Integration/Power.Integration.Tests.ps1 -Output Detailed
 Invoke-Pester ./tests/Integration/Lifecycle.Integration.Tests.ps1 -Output Detailed
+Invoke-Pester ./tests/Integration/Hardware.Integration.Tests.ps1 -Output Detailed
 ```
 
 The header of each test file lists every variable it reads.
