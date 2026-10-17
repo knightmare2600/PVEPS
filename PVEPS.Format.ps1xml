@@ -539,5 +539,33 @@
         </TableRowEntries>
       </TableControl>
     </View>
+    <View>
+      <Name>PVEPS.Event</Name>
+      <ViewSelectedBy>
+        <TypeName>PVEPS.Event</TypeName>
+      </ViewSelectedBy>
+      <TableControl>
+        <TableHeaders>
+          <TableColumnHeader><Label>Time</Label></TableColumnHeader>
+          <TableColumnHeader><Label>Node</Label></TableColumnHeader>
+          <TableColumnHeader><Label>User</Label></TableColumnHeader>
+          <TableColumnHeader><Label>Tag</Label></TableColumnHeader>
+          <TableColumnHeader><Label>Severity</Label></TableColumnHeader>
+          <TableColumnHeader><Label>Message</Label></TableColumnHeader>
+        </TableHeaders>
+        <TableRowEntries>
+          <TableRowEntry>
+            <TableColumnItems>
+              <TableColumnItem><PropertyName>Time</PropertyName></TableColumnItem>
+              <TableColumnItem><PropertyName>Node</PropertyName></TableColumnItem>
+              <TableColumnItem><PropertyName>User</PropertyName></TableColumnItem>
+              <TableColumnItem><PropertyName>Tag</PropertyName></TableColumnItem>
+              <TableColumnItem><PropertyName>Severity</PropertyName></TableColumnItem>
+              <TableColumnItem><PropertyName>Message</PropertyName></TableColumnItem>
+            </TableColumnItems>
+          </TableRowEntry>
+        </TableRowEntries>
+      </TableControl>
+    </View>
   </ViewDefinitions>
 </Configuration>

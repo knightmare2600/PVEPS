@@ -31,6 +31,8 @@
 #v2.0.0  2026-10-17  RM  Phase 7 storage and backups: Get/Set/Remove/Import-PVEStorageContent,
 #        Get/Save-PVEApplianceTemplate, Backup-PVEVM, Backup-PVEContainer, Get-PVEBackup, Restore-PVEBackup.
 #        Invoke-PVERequest can send multipart uploads.
+#v2.0.0  2026-10-17  RM  Phase 8 statistics and events: Get-PVEVMStat, Get-PVEContainerStat, Get-PVENodeStat,
+#        Get-PVEStorageStat, Get-PVEEvent.
 #
 #--------------------------------------------------------------------------------------------------------------
 

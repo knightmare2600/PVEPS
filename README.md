@@ -5,10 +5,11 @@ PowerShell module for managing Proxmox VE through its REST API, in the style of 
 Originally written by Einar Stenberg (2018). Version 2 is a rewrite for PowerShell 7 and Proxmox VE 9.x,
 and is a clean break from the v1 cmdlets.
 
-> **Status:** work in progress. Phase 0 (connection, authentication, request handling, tasks),
-> Phase 1 (inventory), Phase 2 (power), Phase 3 (lifecycle), Phase 4 (hardware), Phase 5 (snapshots),
-> Phase 6 (guest agent and console) and Phase 7 (storage and backups) are in place. Statistics and
-> events cmdlets follow. Clustered PVE is not yet
+> **Status:** every planned phase is written: connection and tasks, inventory, power, lifecycle,
+> hardware, snapshots, guest agent and console, storage and backups, and statistics and events. It has
+> unit tests throughout but has not yet been run against a real server, so treat it as untested until
+> the integration tests pass on your PVE 9.2 node. Firewall, HA, users and ACLs, Ceph and SDN are out of
+> scope for now. Clustered PVE is not yet
 > supported; development and testing target a standalone node.
 
 ## Requirements
@@ -85,6 +86,9 @@ runs out. Users with two-factor authentication enabled must use an API token.
 | `Get-PVEApplianceTemplate` / `Save-PVEApplianceTemplate` | Container templates from the PVE catalogue |
 | `Backup-PVEVM` / `Backup-PVEContainer` | vzdump backups; writes the new backup objects |
 | `Get-PVEBackup` / `Restore-PVEBackup` | List backups (`-Latest` per guest); restore to the same or a new ID |
+| `Get-PVEVMStat` / `Get-PVEContainerStat` | Performance samples (CPU, memory, network, disk I/O) per guest |
+| `Get-PVENodeStat` / `Get-PVEStorageStat` | Performance and usage samples per node or storage |
+| `Get-PVEEvent` | The cluster log: logins, task starts and ends, and other events |
 | `Invoke-PVEApi` | Call any API endpoint directly, for anything not yet wrapped |
 
 Power cmdlets take names (wildcards allowed), `-VMId`, or piped objects. They wait for the PVE task to
@@ -131,6 +135,8 @@ Get-PVEVM 'web*' | Invoke-PVEVMScript -ScriptText 'systemctl is-active nginx' | 
 Get-PVEApplianceTemplate 'debian-13-standard*' | Save-PVEApplianceTemplate -Storage local
 Get-PVEVM web01 | Backup-PVEVM -Storage local -Mode snapshot
 Get-PVEBackup -VMId 100 -Latest | Restore-PVEBackup -VMId 150 -Unique
+Get-PVEVMStat -VMId 100 -Timeframe day -Metric cpu, mem
+Get-PVEEvent -Start (Get-Date).AddHours(-1)
 Get-PVEVM 'scratch-*' | Stop-PVEVM -Confirm:$false | Remove-PVEVM -Purge -Confirm:$false
 Invoke-PVEApi -Path /cluster/resources -Parameters @{ type = 'vm' }
 Invoke-PVEApi -Method POST -Path /nodes/pve01/qemu/9001/status/start -WhatIf
