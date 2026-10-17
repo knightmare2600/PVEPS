@@ -1,6 +1,6 @@
 @{
   RootModule           = 'PVEPS.psm1'
-  ModuleVersion        = '2.0.0'
+  ModuleVersion        = '1.0.1'
   GUID                 = 'cba37351-781d-47f8-a322-03cd19ea9834'
   Author               = 'Einar Stenberg, Robert McLay'
   Copyright            = '(c) 2018 Einar Stenberg, (c) 2026 Robert McLay. Licensed under GPLv3.'
@@ -102,9 +102,10 @@
   AliasesToExport      = @()
   PrivateData          = @{
     PSData = @{
-      Tags       = @('Proxmox', 'PVE', 'Virtualisation', 'Linux', 'MacOS', 'Windows', 'PSEdition_Core')
-      LicenseUri = 'https://www.gnu.org/licenses/gpl-3.0.html'
-      ProjectUri = 'https://github.com/knightmare2600/PVEPS'
+      Tags         = @('Proxmox', 'PVE', 'ProxmoxVE', 'QEMU', 'LXC', 'Virtualisation', 'Linux', 'MacOS', 'Windows', 'PSEdition_Core')
+      LicenseUri   = 'https://www.gnu.org/licenses/gpl-3.0.html'
+      ProjectUri   = 'https://github.com/knightmare2600/PVEPS'
+      ReleaseNotes = '1.0.1: first release of the PowerShell 7 rewrite for Proxmox VE 9.x. 86 cmdlets for connections and tasks, inventory, power, lifecycle, hardware, snapshots, guest agent and console, storage and backups, and statistics and events. Tested on Windows and Linux against Proxmox VE 9.2.21. See README.md.'
     }
   }
 }

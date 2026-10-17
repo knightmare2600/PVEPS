@@ -74,6 +74,71 @@ Describe 'Module' {
       @($help.examples.example).Count | Should -BeGreaterThan 0 -Because "$name needs an example"
     }
   }
+
+  It 'documents the description and every parameter of every public function' {
+    $common = [System.Management.Automation.PSCmdlet]::CommonParameters + [System.Management.Automation.PSCmdlet]::OptionalCommonParameters
+    $gaps = foreach ($command in Get-Command -Module PVEPS) {
+      $help = Get-Help $command.Name -Full
+      if (-not $help.description) {
+        "$($command.Name): description"
+      }
+      foreach ($parameter in $command.Parameters.Keys | Where-Object { $_ -notin $common }) {
+        $documented = @($help.parameters.parameter | Where-Object { $_.name -eq $parameter -and $_.description })
+        if (-not $documented) {
+          "$($command.Name): -$parameter"
+        }
+      }
+    }
+    $gaps | Should -BeNullOrEmpty
+  }
+
+  It 'has release notes for the manifest version' {
+    $manifest = Import-PowerShellDataFile (Join-Path $script:ModuleRoot 'PVEPS.psd1')
+    $manifest.PrivateData.PSData.ReleaseNotes | Should -BeLike "$($manifest.ModuleVersion):*"
+  }
+}
+
+Describe 'README' {
+  It 'has a cmdlet index and reference that match the comment-based help' {
+    # In a separate process: the generator imports the module with -Force, which would replace the
+    # module these tests have loaded.
+    $script = Join-Path $script:ModuleRoot 'build/Update-PVEReadme.ps1'
+    $output = & ([System.Diagnostics.Process]::GetCurrentProcess().MainModule.FileName) -NoProfile -NonInteractive -File $script -Check 2>&1
+    $LASTEXITCODE | Should -Be 0 -Because ($output -join "`n")
+  }
+
+  It 'uses only cmdlets and parameters that exist in its PowerShell examples' {
+    $text = Get-Content -Raw (Join-Path $script:ModuleRoot 'README.md')
+    $blocks = [regex]::Matches($text, '(?ms)^```powershell\r?\n(.*?)^```') | ForEach-Object { $_.Groups[1].Value }
+    $blocks.Count | Should -BeGreaterThan 0
+    $problems = foreach ($block in $blocks) {
+      $errors = $null
+      $ast = [System.Management.Automation.Language.Parser]::ParseInput($block, [ref]$null, [ref]$errors)
+      if ($errors) {
+        "parse error: $($errors[0].Message) in: $($errors[0].Extent.Text)"
+        continue
+      }
+      foreach ($call in $ast.FindAll({ $args[0] -is [System.Management.Automation.Language.CommandAst] }, $true)) {
+        $name = $call.GetCommandName()
+        if ($name -notlike '*-PVE*') {
+          continue
+        }
+        $command = Get-Command -Name $name -Module PVEPS -ErrorAction SilentlyContinue
+        if (-not $command) {
+          "unknown cmdlet: $name"
+          continue
+        }
+        $names = @($command.Parameters.Keys) + @($command.Parameters.Values | ForEach-Object Aliases)
+        foreach ($parameter in $call.CommandElements | Where-Object { $_ -is [System.Management.Automation.Language.CommandParameterAst] }) {
+          $hits = @($names | Where-Object { $_ -like "$($parameter.ParameterName)*" })
+          if ($hits -notcontains $parameter.ParameterName -and $hits.Count -ne 1) {
+            "$name has no parameter -$($parameter.ParameterName)"
+          }
+        }
+      }
+    }
+    $problems | Should -BeNullOrEmpty
+  }
 }
 
 Describe 'Format-PVEPath' {

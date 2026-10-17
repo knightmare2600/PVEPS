@@ -37,6 +37,10 @@
 #        settings and pool members, so they no longer show as @{...} inside other objects.
 #v2.0.0  2026-10-17  RM  Get-PVENode: CPU sockets and cores, load average, root file system and swap usage,
 #        boot mode and Secure Boot, from the node status it already read.
+#v1.0.1  2026-10-17  RM  Released as 1.0.1, the first release of the rewrite. The v2.0.0 entries above are its
+#        development history, numbered before the release version was chosen. Full README cmdlet reference
+#        generated from the help (build/Update-PVEReadme.ps1); build/Build-PVEPS.ps1 packages the module for
+#        Install-PSResource and the PowerShell Gallery.
 #
 #--------------------------------------------------------------------------------------------------------------
 
