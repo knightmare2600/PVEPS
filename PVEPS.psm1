@@ -19,6 +19,9 @@
 #        Get-PVEPool. Connect-PVE takes -User/-Password by default, with -Token for API tokens.
 #v2.0.0  2026-10-16  RM  Phase 2 power: Start/Stop/Restart/Suspend/Resume-PVEVM, Stop/Restart-PVEVMGuest,
 #        Start/Stop/Restart-PVEContainer, Stop-PVEContainerGuest. Decisions use live guest status.
+#v2.0.0  2026-10-17  RM  Phase 3 lifecycle: New/Set/Copy/Move/Remove-PVEVM and -PVEContainer,
+#        ConvertTo-PVEVMTemplate, ConvertTo-PVEContainerTemplate. Output objects now take name, tags,
+#        CPU and memory from the live status endpoint.
 #
 #--------------------------------------------------------------------------------------------------------------
 

@@ -3,15 +3,15 @@
 # (and optionally one test container). Nothing else on the server is touched.
 #
 # Safety, in layers:
-#   1. Use a token whose only privileges are on a dedicated pool (see README, "Power tests"), so PVE
+#   1. Use a token whose only privileges are on a dedicated pool (see README, "Write tests"), so PVE
 #      itself refuses anything outside that pool.
 #   2. Before acting, these tests refuse to run unless the target is in PVEPS_TEST_POOL and its name
 #      starts with 'pveps-test'.
 #   3. The guest's power state at the start is restored at the end.
 #
 # Skipped unless these are set, in addition to PVEPS_TEST_SERVER (and PVEPS_TEST_SKIPCERT if needed):
-#   PVEPS_TEST_POWER_TOKEN_ID      e.g. pveps@pve!power
-#   PVEPS_TEST_POWER_TOKEN_SECRET
+#   PVEPS_TEST_WRITE_TOKEN_ID      e.g. pveps@pve!write
+#   PVEPS_TEST_WRITE_TOKEN_SECRET
 #   PVEPS_TEST_POOL                e.g. pveps-test
 #   PVEPS_TEST_POWER_VMID          ID of the test VM (name must start with pveps-test)
 # Optional:
@@ -22,39 +22,14 @@
 # Run: Invoke-Pester ./tests/Integration/Power.Integration.Tests.ps1 -Output Detailed
 
 BeforeDiscovery {
-  $script:HavePower = [bool]($env:PVEPS_TEST_SERVER -and $env:PVEPS_TEST_POWER_TOKEN_ID -and $env:PVEPS_TEST_POWER_TOKEN_SECRET -and $env:PVEPS_TEST_POOL -and $env:PVEPS_TEST_POWER_VMID)
+  $script:HavePower = [bool]($env:PVEPS_TEST_SERVER -and $env:PVEPS_TEST_WRITE_TOKEN_ID -and $env:PVEPS_TEST_WRITE_TOKEN_SECRET -and $env:PVEPS_TEST_POOL -and $env:PVEPS_TEST_POWER_VMID)
   $script:HaveCt = [bool]($script:HavePower -and $env:PVEPS_TEST_POWER_CTID)
   $script:HaveGuestOs = $env:PVEPS_TEST_POWER_GUESTOS -eq '1'
 }
 
 BeforeAll {
-  Import-Module (Join-Path (Split-Path (Split-Path $PSScriptRoot -Parent) -Parent) 'PVEPS.psd1') -Force
-
-  function Assert-PVETestGuest {
-    # Throws unless the guest is in the test pool and named pveps-test*. Called before any action.
-    param([psobject]$Guest, [string]$Kind)
-    if (-not $Guest) {
-      throw "Test $Kind not found (or not visible to the test token)."
-    }
-    if ($Guest.Pool -ne $env:PVEPS_TEST_POOL) {
-      throw "REFUSING: $Kind $($Guest.VMId) is in pool '$($Guest.Pool)', not '$env:PVEPS_TEST_POOL'."
-    }
-    if ($Guest.Name -notlike 'pveps-test*') {
-      throw "REFUSING: $Kind $($Guest.VMId) is named '$($Guest.Name)'; test guests must be named pveps-test*."
-    }
-  }
-
-  if ($env:PVEPS_TEST_POWER_TOKEN_ID -and $env:PVEPS_TEST_POWER_TOKEN_SECRET -and $env:PVEPS_TEST_SERVER) {
-    $token = [pscredential]::new($env:PVEPS_TEST_POWER_TOKEN_ID, (ConvertTo-SecureString -String $env:PVEPS_TEST_POWER_TOKEN_SECRET -AsPlainText -Force))
-    $connect = @{
-      Server               = $env:PVEPS_TEST_SERVER
-      Port                 = if ($env:PVEPS_TEST_PORT) { [int]$env:PVEPS_TEST_PORT } else { 8006 }
-      SkipCertificateCheck = $env:PVEPS_TEST_SKIPCERT -eq '1'
-      Credential           = $token
-      Token                = $true
-    }
-    $null = Connect-PVE @connect
-  }
+  . (Join-Path $PSScriptRoot 'IntegrationHelpers.ps1')
+  Connect-PVETestWrite
 }
 
 AfterAll {

@@ -44,22 +44,14 @@ function Wait-PVETask {
 
   process {
     try {
-      $connections = @(Resolve-PVEConnection -Server $Server)
+      $connection = Resolve-PVESingleConnection -Server $Server -Reason 'a task belongs to exactly one'
     }
     catch {
       $PSCmdlet.WriteError($_)
       return
     }
-    if ($connections.Count -ne 1) {
-      $PSCmdlet.WriteError([System.Management.Automation.ErrorRecord]::new(
-          [System.ArgumentException]::new("-Server matched $($connections.Count) connections; a task belongs to exactly one."),
-          'PVEAmbiguousServer',
-          [System.Management.Automation.ErrorCategory]::InvalidArgument,
-          $Server))
-      return
-    }
     foreach ($id in $Upid) {
-      $pending.Add([pscustomobject]@{ Upid = $id; Connection = $connections[0] })
+      $pending.Add([pscustomobject]@{ Upid = $id; Connection = $connection })
     }
   }
 

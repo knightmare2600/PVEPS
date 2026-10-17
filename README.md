@@ -6,9 +6,9 @@ Originally written by Einar Stenberg (2018). Version 2 is a rewrite for PowerShe
 and is a clean break from the v1 cmdlets.
 
 > **Status:** work in progress. Phase 0 (connection, authentication, request handling, tasks),
-> Phase 1 (inventory) and Phase 2 (power) are in place. Lifecycle, hardware, snapshot, guest-agent, storage/backup and
-> statistics cmdlets follow in later phases. Clustered PVE is not yet supported; development and testing
-> target a standalone node.
+> Phase 1 (inventory), Phase 2 (power) and Phase 3 (lifecycle) are in place. Hardware, snapshot,
+> guest-agent, storage/backup and statistics cmdlets follow in later phases. Clustered PVE is not yet
+> supported; development and testing target a standalone node.
 
 ## Requirements
 
@@ -61,12 +61,25 @@ runs out. Users with two-factor authentication enabled must use an API token.
 | `Restart-PVEVMGuest` / `Restart-PVEContainer` | Clean reboot |
 | `Restart-PVEVM` | Hard reset |
 | `Suspend-PVEVM` / `Resume-PVEVM` | Pause and resume; `Suspend-PVEVM -ToDisk` hibernates |
+| `New-PVEVM` / `New-PVEContainer` | Create a VM (disks, NICs, ISO, UEFI) or a container from an OS template |
+| `Set-PVEVM` / `Set-PVEContainer` | Change CPU, memory, name, tags, description, start-on-boot, protection, or any option by API name |
+| `Copy-PVEVM` / `Copy-PVEContainer` | Clone a guest or template (linked or `-Full`) |
+| `ConvertTo-PVEVMTemplate` / `ConvertTo-PVEContainerTemplate` | Turn a stopped guest into a template |
+| `Move-PVEVM` / `Move-PVEContainer` | Move a guest's disks or volumes to another storage |
+| `Remove-PVEVM` / `Remove-PVEContainer` | Delete a stopped guest and its disks |
 | `Invoke-PVEApi` | Call any API endpoint directly, for anything not yet wrapped |
 
 Power cmdlets take names (wildcards allowed), `-VMId`, or piped objects. They wait for the PVE task to
 finish and write the guest with its live status; `-RunAsync` returns the tasks instead. A guest already
 in the requested state is skipped with a warning. Every stop, shutdown, reset, reboot and suspend asks
 for confirmation unless `-Confirm:$false` is given, and every power cmdlet honours `-WhatIf`.
+
+Lifecycle cmdlets work the same way. New guests get the next free ID unless `-VMId` is given, and land
+on the server's only node unless `-Node` is given. Remove and convert-to-template refuse a guest that is
+not stopped, and ask for confirmation; set, clone and move do not, but honour `-WhatIf`. A name or
+wildcard matches templates only with `-IncludeTemplate`, so `Remove-PVEVM 'test*'` cannot delete a
+template by accident; an ID always does what it says. `Set-*` warns when a running guest has changes
+that PVE will only apply at the next start.
 
 Every cmdlet takes `-Server` (a connection object or a server name) and defaults to the default
 connection. Objects carry the connection they came from, so pipelines work across servers.
@@ -81,6 +94,11 @@ Get-PVEStorage -Content iso
 Get-PVEVM -Name 'test*' | Stop-PVEVMGuest -TimeoutSec 120 -ForceStop -Confirm:$false
 Start-PVEVM -VMId 100, 101 -RunAsync | Wait-PVETask
 Get-PVETask -Node pve01 -Source all -Limit 10
+New-PVEVM web01 -Cores 2 -MemoryGB 4 -DiskGB 32 -Storage local-lvm -NetworkBridge vmbr0 -OSType l26 -PowerOn
+Copy-PVEVM tmpl-debian13 -NewName web02 | Start-PVEVM
+Get-PVEVM 'web*' | Set-PVEVM -Tags web, production -StartOnBoot $true
+Move-PVEVM web01 -Storage fast-ssd -DeleteSource
+Get-PVEVM 'scratch-*' | Stop-PVEVM -Confirm:$false | Remove-PVEVM -Purge -Confirm:$false
 Invoke-PVEApi -Path /cluster/resources -Parameters @{ type = 'vm' }
 Invoke-PVEApi -Method POST -Path /nodes/pve01/qemu/9001/status/start -WhatIf
 ```
@@ -91,41 +109,66 @@ Invoke-PVEApi -Method POST -Path /nodes/pve01/qemu/9001/status/start -WhatIf
 # Unit tests: offline, the HTTP layer is mocked.
 Invoke-Pester ./tests -ExcludeTagFilter Integration
 
-# Integration tests: read-only, run against a real server.
+# Integration tests: read-only, run against a real server (token setup below).
 $env:PVEPS_TEST_SERVER = 'pve01.example.com'
 $env:PVEPS_TEST_TOKEN_ID = 'pveps@pve!readonly'
 $env:PVEPS_TEST_TOKEN_SECRET = '...'
 $env:PVEPS_TEST_SKIPCERT = '1'
-Invoke-Pester ./tests -TagFilter Integration -ExcludeTagFilter Power -Output Detailed
+Invoke-Pester ./tests -TagFilter Integration -ExcludeTagFilter Power, Lifecycle -Output Detailed
+```
+
+The read-only tests need a token with audit rights. With privilege separation a token gets the
+intersection of its own and its user's rights, so both get the role. On the node, as root:
+
+```
+pveum user add pveps@pve --comment "PVEPS integration tests"
+pveum user token add pveps@pve readonly --privsep 1
+pveum acl modify / --users pveps@pve --tokens 'pveps@pve!readonly' --roles PVEAuditor
 ```
 
 The header of `tests/Integration/Connection.Integration.Tests.ps1` lists every variable it reads.
 
-### Power tests
+### Write tests
 
-The power tests change the power state of one dedicated test VM (and optionally one container). They
-need a separate token that has rights only on a dedicated pool, so PVE refuses anything outside it, and
-the tests themselves refuse any guest not in that pool or not named `pveps-test*`. On the node, as root
-(choose a free VMID):
+The power and lifecycle tests change state, so they use a separate token whose rights cover only a
+dedicated pool and the storage the tests use; PVE refuses anything else. These commands add to the
+`pveps@pve` user created above. The tests also refuse any guest
+not in that pool or not named `pveps-test*`. The lifecycle tests create every guest they touch and delete
+them again at the end. On the node, as root:
 
 ```
 pveum pool add pveps-test --comment "PVEPS integration tests"
-qm create 9990 --name pveps-test-vm --memory 512 --cores 1 --pool pveps-test
-pveum acl modify /pool/pveps-test --users pveps@pve --roles PVEVMUser
-pveum user token add pveps@pve power --privsep 1
-pveum acl modify /pool/pveps-test --tokens 'pveps@pve!power' --roles PVEVMUser
+pveum user token add pveps@pve write --privsep 1
+pveum acl modify /pool/pveps-test --users pveps@pve --tokens 'pveps@pve!write' --roles PVEVMAdmin
+pveum acl modify /storage/local-lvm --users pveps@pve --tokens 'pveps@pve!write' --roles PVEDatastoreUser
 ```
 
-The VM has no disk or OS, which is enough for start, stop, reset, suspend and resume. Clean shutdown
-and reboot need a guest OS; set `PVEPS_TEST_POWER_GUESTOS=1` if the test VM has one.
+Replace `local-lvm` with the test storage, and repeat that line for the second storage (Move tests) and
+for the storage holding the container template (container tests). For `PVEPS_TEST_BRIDGE`, the token also
+needs `SDN.Use` on the bridge; on PVE 8 and later, plain bridges sit in the `localnetwork` zone, so
+`pveum acl modify /sdn/zones/localnetwork --users pveps@pve --tokens 'pveps@pve!write' --roles PVESDNUser`
+grants it (unverified on 9.2; the create test fails with a permission error if not).
+
+The power tests also need one test VM in the pool (choose a free VMID). It has no disk or OS, which is
+enough for start, stop, reset, suspend and resume. Clean shutdown and reboot need a guest OS; set
+`PVEPS_TEST_POWER_GUESTOS=1` if the test VM has one.
+
+```
+qm create 9990 --name pveps-test-vm --memory 512 --cores 1 --pool pveps-test
+```
 
 ```powershell
-$env:PVEPS_TEST_POWER_TOKEN_ID = 'pveps@pve!power'
-$env:PVEPS_TEST_POWER_TOKEN_SECRET = Read-Host 'Power token secret' -MaskInput
+$env:PVEPS_TEST_WRITE_TOKEN_ID = 'pveps@pve!write'
+$env:PVEPS_TEST_WRITE_TOKEN_SECRET = Read-Host 'Write token secret' -MaskInput
 $env:PVEPS_TEST_POOL = 'pveps-test'
 $env:PVEPS_TEST_POWER_VMID = '9990'
+$env:PVEPS_TEST_STORAGE = 'local-lvm'
+# Optional: $env:PVEPS_TEST_STORAGE2, $env:PVEPS_TEST_BRIDGE, $env:PVEPS_TEST_CT_TEMPLATE
 Invoke-Pester ./tests/Integration/Power.Integration.Tests.ps1 -Output Detailed
+Invoke-Pester ./tests/Integration/Lifecycle.Integration.Tests.ps1 -Output Detailed
 ```
+
+The header of each test file lists every variable it reads.
 
 ## Licence
 
