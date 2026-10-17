@@ -9,6 +9,9 @@ function Invoke-PVERequest {
   - Renews a ticket that is older than $script:PVETicketRenewAfter, and on HTTP 401 logs in again once
     with the stored credential and retries.
   - Parameters are sent as a query string for GET/DELETE and as a form-encoded body for POST/PUT.
+    -Form sends a multipart/form-data body instead (file uploads), built by New-PVEMultipartContent in
+    the field order given; it is built afresh for the retry after a 401, since the file stream is read
+    once per request.
   - Any HTTP status >= 400 becomes a terminating error carrying PVE's own message (taken from the HTTP
     reason phrase, plus any per-parameter "errors" in the body).
   Returns the "data" member of the response.
@@ -25,6 +28,9 @@ function Invoke-PVERequest {
     [string]$Path,
 
     [hashtable]$Parameters,
+
+    # Multipart body for POST uploads (Invoke-WebRequest -Form). Use an ordered dictionary.
+    [System.Collections.IDictionary]$Form,
 
     # Send no authentication (used for the ticket request itself).
     [switch]$NoAuth,
@@ -51,7 +57,7 @@ function Invoke-PVERequest {
   }
 
   $uri = '{0}/api2/json{1}' -f $Connection.BaseUri, $Path
-  $form = ConvertTo-PVEFormData -Parameters $Parameters
+  $encoded = ConvertTo-PVEFormData -Parameters $Parameters
 
   $request = @{
     Method               = $Method
@@ -63,13 +69,18 @@ function Invoke-PVERequest {
     Debug                = $false
   }
 
+  $multipart = $null
   if ($Method -in 'GET', 'DELETE') {
-    if ($form) {
-      $uri = '{0}?{1}' -f $uri, $form
+    if ($encoded) {
+      $uri = '{0}?{1}' -f $uri, $encoded
     }
   }
-  elseif ($form) {
-    $request.Body = $form
+  elseif ($Form) {
+    $multipart = New-PVEMultipartContent -Form $Form
+    $request.Body = $multipart
+  }
+  elseif ($encoded) {
+    $request.Body = $encoded
     $request.ContentType = 'application/x-www-form-urlencoded'
   }
   $request.Uri = $uri
@@ -87,10 +98,13 @@ function Invoke-PVERequest {
   }
 
   # Never log the body: it carries passwords on /access/ticket.
-  Write-Verbose ('{0} {1}{2}' -f $Method, ($Connection.BaseUri + '/api2/json' + $Path), $(if ($Method -in 'GET', 'DELETE' -and $form) { '?' + $form } else { '' }))
+  Write-Verbose ('{0} {1}{2}' -f $Method, ($Connection.BaseUri + '/api2/json' + $Path), $(if ($Method -in 'GET', 'DELETE' -and $encoded) { '?' + $encoded } else { '' }))
 
   try {
     $response = Invoke-WebRequest @request
+  }
+  catch [System.Management.Automation.PipelineStoppedException] {
+    throw
   }
   catch {
     $record = [System.Management.Automation.ErrorRecord]::new(
@@ -100,6 +114,11 @@ function Invoke-PVERequest {
       $Connection.BaseUri
     )
     $PSCmdlet.ThrowTerminatingError($record)
+  }
+  finally {
+    if ($multipart) {
+      $multipart.Dispose()
+    }
   }
 
   $status = [int]$response.StatusCode
@@ -128,6 +147,9 @@ function Invoke-PVERequest {
       Path       = $Path
       Parameters = $Parameters
       NoRetry    = $true
+    }
+    if ($Form) {
+      $retry.Form = $Form
     }
     return Invoke-PVERequest @retry
   }
