@@ -30,6 +30,7 @@ function ConvertTo-PVECloudInit {
     $keys | Where-Object { $_ -match '^ipconfig\d+$' } | Sort-Object -Property { [int]($_ -replace '^ipconfig', '') } | ForEach-Object {
       $option = ConvertFrom-PVEPropertyString -Value ([string](Get-PVEValue $Config $_))
       [pscustomobject]@{
+        PSTypeName  = 'PVEPS.CloudInitIPConfig'
         Index       = [int]($_ -replace '^ipconfig', '')
         IPAddress   = $option['ip']
         Gateway     = $option['gw']

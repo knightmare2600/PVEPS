@@ -8,6 +8,7 @@
   PowerShellVersion    = '7.4'
   CompatiblePSEditions = @('Core')
   FormatsToProcess     = @('PVEPS.Format.ps1xml')
+  TypesToProcess       = @('PVEPS.Types.ps1xml')
   FunctionsToExport    = @(
     'Backup-PVEContainer'
     'Backup-PVEVM'

@@ -33,6 +33,8 @@
 #        Invoke-PVERequest can send multipart uploads.
 #v2.0.0  2026-10-17  RM  Phase 8 statistics and events: Get-PVEVMStat, Get-PVEContainerStat, Get-PVENodeStat,
 #        Get-PVEStorageStat, Get-PVEEvent.
+#v2.0.0  2026-10-17  RM  PVEPS.Types.ps1xml: short ToString for connections, guest interfaces, cloud-init IP
+#        settings and pool members, so they no longer show as @{...} inside other objects.
 #
 #--------------------------------------------------------------------------------------------------------------
 

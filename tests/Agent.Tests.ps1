@@ -126,6 +126,8 @@ Describe 'Get-PVEVMGuest' {
     $g.Interfaces.Count | Should -Be 2
     $g.Interfaces[1].Name | Should -Be 'eth0'
     $g.Interfaces[1].IPAddress | Should -Be @('192.0.2.10/24', 'fe80::1/64')
+    "$($g.Interfaces[1])" | Should -Be 'eth0 (bc:24:11:00:00:01) 192.0.2.10/24 fe80::1/64'
+    ($g | Format-List | Out-String) | Should -Not -Match '@\{'
   }
 
   It 'reports AgentNotRunning without an error when the agent does not answer' {

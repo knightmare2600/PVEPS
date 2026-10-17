@@ -296,6 +296,7 @@ Describe 'Connect-PVE' {
   It 'brackets a bare IPv6 address and honours -Port' {
     $conn = Connect-PVE -Server '2001:db8::10' -Port 8443 -Credential (New-TestCredential)
     $conn.BaseUri | Should -Be 'https://[2001:db8::10]:8443'
+    "$conn" | Should -Be 'https://[2001:db8::10]:8443 (root@pam)'
     $script:Fake.Calls[0].Uri | Should -Be 'https://[2001:db8::10]:8443/api2/json/access/ticket'
   }
 

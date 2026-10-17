@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ToString for objects that sit inside other PVEPS objects, so Format-List and string conversion show a
+  short summary instead of @{...}. Properties and JSON output are unchanged.
+-->
+<Types>
+  <Type>
+    <Name>PVEPS.Connection</Name>
+    <Members>
+      <ScriptMethod>
+        <Name>ToString</Name>
+        <Script>'{0} ({1})' -f $this.BaseUri, $this.User</Script>
+      </ScriptMethod>
+    </Members>
+  </Type>
+  <Type>
+    <Name>PVEPS.VMGuestInterface</Name>
+    <Members>
+      <ScriptMethod>
+        <Name>ToString</Name>
+        <Script>(@($this.Name, $(if ($this.MacAddress) { '({0})' -f $this.MacAddress })) + @($this.IPAddress) | Where-Object { $_ }) -join ' '</Script>
+      </ScriptMethod>
+    </Members>
+  </Type>
+  <Type>
+    <Name>PVEPS.CloudInitIPConfig</Name>
+    <Members>
+      <ScriptMethod>
+        <Name>ToString</Name>
+        <Script>$parts = foreach ($pair in @(@('ip', $this.IPAddress), @('gw', $this.Gateway), @('ip6', $this.IPv6Address), @('gw6', $this.Gateway6))) { if ($pair[1]) { '{0}={1}' -f $pair[0], $pair[1] } }
+'net{0}: {1}' -f $this.Index, (@($parts) -join ',')</Script>
+      </ScriptMethod>
+    </Members>
+  </Type>
+  <Type>
+    <Name>PVEPS.PoolMember</Name>
+    <Members>
+      <ScriptMethod>
+        <Name>ToString</Name>
+        <Script>if ($this.Name) { '{0} ({1})' -f $this.Id, $this.Name } else { [string]$this.Id }</Script>
+      </ScriptMethod>
+    </Members>
+  </Type>
+</Types>

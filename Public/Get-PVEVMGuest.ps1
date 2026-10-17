@@ -105,6 +105,7 @@ function Get-PVEVMGuest {
           foreach ($interface in @($calls['network-get-interfaces'] | Where-Object { $_ })) {
             $addresses = Get-PVEValue $interface 'ip-addresses'
             [pscustomobject]@{
+              PSTypeName = 'PVEPS.VMGuestInterface'
               Name       = Get-PVEValue $interface 'name'
               MacAddress = Get-PVEValue $interface 'hardware-address'
               IPAddress  = [string[]]@(

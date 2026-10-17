@@ -540,6 +540,8 @@ Describe 'Get-PVEVMCloudInit' {
     $ci.IPConfig[0].Gateway | Should -Be '192.0.2.1'
     $ci.IPConfig[1].Index | Should -Be 1
     $ci.IPConfig[1].IPv6Address | Should -Be 'auto'
+    "$($ci.IPConfig[0])" | Should -Be 'net0: ip=192.0.2.5/24,gw=192.0.2.1'
+    "$($ci.IPConfig[1])" | Should -Be 'net1: ip6=auto'
     $ci.Nameserver | Should -Be @('192.0.2.53', '192.0.2.54')
     $ci.Upgrade | Should -BeTrue
     $ci.IsPending | Should -BeTrue

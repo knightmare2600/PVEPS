@@ -311,7 +311,9 @@ Describe 'Get-PVEPool' {
     $vm = $lab.Members | Where-Object Type -EQ 'qemu'
     $vm.VMId | Should -Be 100
     $vm.Name | Should -Be 'web01'
+    "$vm" | Should -Be 'qemu/100 (web01)'
     ($lab.Members | Where-Object Type -EQ 'storage').Storage | Should -Be 'local'
+    "$($lab.Members | Where-Object Type -EQ 'storage')" | Should -Be 'storage/pve/local'
   }
 
   It 'returns an empty member list for a pool without members' {
