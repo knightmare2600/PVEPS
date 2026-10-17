@@ -38,7 +38,7 @@ BeforeAll {
         )
       }
       '^/nodes/pve/status$' {
-        return New-FakeResponse -Data @{ pveversion = 'pve-manager/9.2.1/abcdef'; cpuinfo = @{ model = 'AMD EPYC 7302P'; cpus = 16 }; 'current-kernel' = @{ release = '6.14.8-2-pve' } }
+        return New-FakeResponse -Data @{ pveversion = 'pve-manager/9.2.1/abcdef'; cpuinfo = @{ model = 'AMD EPYC 7302P'; cpus = 16; sockets = 1; cores = 16 }; 'current-kernel' = @{ release = '6.14.8-2-pve' }; loadavg = @('1.40', '1.97', '3.47'); rootfs = @{ used = 6GB; total = 100GB }; swap = @{ used = 0; total = 8GB }; 'boot-info' = @{ mode = 'efi'; secureboot = 1 } }
       }
       '^/nodes/pve/storage$' {
         return New-FakeResponse -Data @(
@@ -228,6 +228,16 @@ Describe 'Get-PVENode' {
     $node.Version | Should -Be 'pve-manager/9.2.1/abcdef'
     $node.Kernel | Should -Be '6.14.8-2-pve'
     $node.CpuModel | Should -Be 'AMD EPYC 7302P'
+    $node.CpuSockets | Should -Be 1
+    $node.CpuCores | Should -Be 16
+    $node.LoadAverage | Should -Be @(1.4, 1.97, 3.47)
+    $node.LoadAverage.Count | Should -Be 3 -Because 'the array is not wrapped in a second array'
+    $node.RootFsUsedGB | Should -Be 6
+    $node.RootFsTotalGB | Should -Be 100
+    $node.SwapUsedGB | Should -Be 0
+    $node.SwapTotalGB | Should -Be 8
+    $node.BootMode | Should -Be 'efi'
+    $node.SecureBoot | Should -BeTrue
     $node.PSObject.TypeNames | Should -Contain 'PVEPS.Node'
   }
 
@@ -237,6 +247,8 @@ Describe 'Get-PVENode' {
     $script:Fake.Calls.Path | Should -Not -Contain '/nodes/pve-old/status'
     $nodes[1].Version | Should -BeNullOrEmpty
     $nodes[1].Uptime | Should -BeNullOrEmpty
+    $nodes[1].LoadAverage.Count | Should -Be 0
+    $nodes[1].SecureBoot | Should -BeNullOrEmpty
   }
 
   It 'writes not-found for an unknown node name' {

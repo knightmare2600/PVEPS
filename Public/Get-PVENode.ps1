@@ -3,8 +3,12 @@ function Get-PVENode {
   .SYNOPSIS
   Gets Proxmox VE nodes.
   .DESCRIPTION
-  Lists nodes from /nodes and, for each online node, adds the PVE version, running kernel and CPU model
-  from /nodes/{node}/status. Offline nodes are returned with those fields empty.
+  Lists nodes from /nodes and, for each online node, adds details from /nodes/{node}/status: PVE version,
+  running kernel, CPU model, sockets and physical cores, load average, root file system and swap usage,
+  and boot mode. Offline nodes are returned with those fields empty.
+
+  The swap fields are not in the API schema; they are read as a PVE 9.2.21 node returns them. SecureBoot
+  is empty unless the node booted through EFI (according to the API schema).
 
   A non-wildcard -Name that matches no node is reported as a non-terminating "not found" error.
 
@@ -70,18 +74,33 @@ function Get-PVENode {
 
         $cpu = Get-PVEValue $raw 'cpu'
         $uptime = Get-PVEValue $raw 'uptime'
+        $cpuInfo = Get-PVEValue $detail 'cpuinfo'
+        $rootFs = Get-PVEValue $detail 'rootfs'
+        $swap = Get-PVEValue $detail 'swap'
+        $bootInfo = Get-PVEValue $detail 'boot-info'
+        $secureBoot = Get-PVEValue $bootInfo 'secureboot'
+        $loadAverage = Get-PVEValue $detail 'loadavg'
         $node = [pscustomobject]@{
           PSTypeName      = 'PVEPS.Node'
           Name            = $nodeName
           Status          = $nodeStatus
           Cpus            = Get-PVEValue $raw 'maxcpu'
-          CpuModel        = Get-PVEValue (Get-PVEValue $detail 'cpuinfo') 'model'
+          CpuModel        = Get-PVEValue $cpuInfo 'model'
+          CpuSockets      = Get-PVEValue $cpuInfo 'sockets'
+          CpuCores        = Get-PVEValue $cpuInfo 'cores'
           CpuUsagePercent = if ($null -ne $cpu) { [math]::Round([double]$cpu * 100, 1) } else { $null }
           MemoryUsedGB    = ConvertTo-PVEGB (Get-PVEValue $raw 'mem')
           MemoryTotalGB   = ConvertTo-PVEGB (Get-PVEValue $raw 'maxmem')
+          LoadAverage     = [double[]]@(@($loadAverage) | Where-Object { $null -ne $_ } | ForEach-Object { [double]::Parse([string]$_, [cultureinfo]::InvariantCulture) })
+          RootFsUsedGB    = ConvertTo-PVEGB (Get-PVEValue $rootFs 'used')
+          RootFsTotalGB   = ConvertTo-PVEGB (Get-PVEValue $rootFs 'total')
+          SwapUsedGB      = ConvertTo-PVEGB (Get-PVEValue $swap 'used')
+          SwapTotalGB     = ConvertTo-PVEGB (Get-PVEValue $swap 'total')
           Uptime          = if ($null -ne $uptime) { [timespan]::FromSeconds([double]$uptime) } else { $null }
           Version         = Get-PVEValue $detail 'pveversion'
           Kernel          = Get-PVEValue (Get-PVEValue $detail 'current-kernel') 'release'
+          BootMode        = Get-PVEValue $bootInfo 'mode'
+          SecureBoot      = if ($null -ne $secureBoot) { [bool][int]$secureBoot } else { $null }
           SslFingerprint  = Get-PVEValue $raw 'ssl_fingerprint'
           Connection      = $connection
         }

@@ -35,6 +35,8 @@
 #        Get-PVEStorageStat, Get-PVEEvent.
 #v2.0.0  2026-10-17  RM  PVEPS.Types.ps1xml: short ToString for connections, guest interfaces, cloud-init IP
 #        settings and pool members, so they no longer show as @{...} inside other objects.
+#v2.0.0  2026-10-17  RM  Get-PVENode: CPU sockets and cores, load average, root file system and swap usage,
+#        boot mode and Secure Boot, from the node status it already read.
 #
 #--------------------------------------------------------------------------------------------------------------
 
