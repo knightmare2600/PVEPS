@@ -6,8 +6,9 @@ Originally written by Einar Stenberg (2018). Version 2 is a rewrite for PowerShe
 and is a clean break from the v1 cmdlets.
 
 > **Status:** work in progress. Phase 0 (connection, authentication, request handling, tasks),
-> Phase 1 (inventory), Phase 2 (power), Phase 3 (lifecycle), Phase 4 (hardware), Phase 5 (snapshots)
-> and Phase 6 (guest agent and console) are in place. Storage/backup and statistics cmdlets follow. Clustered PVE is not yet
+> Phase 1 (inventory), Phase 2 (power), Phase 3 (lifecycle), Phase 4 (hardware), Phase 5 (snapshots),
+> Phase 6 (guest agent and console) and Phase 7 (storage and backups) are in place. Statistics and
+> events cmdlets follow. Clustered PVE is not yet
 > supported; development and testing target a standalone node.
 
 ## Requirements
@@ -79,6 +80,11 @@ runs out. Users with two-factor authentication enabled must use an API token.
 | `Invoke-PVEVMScript` | Run a command or script inside a VM through the guest agent |
 | `Copy-PVEVMGuestFile` | Copy a file into (up to 45 KiB) or out of a VM through the guest agent |
 | `Open-PVEVMConsole` / `Open-PVEContainerConsole` | Open the noVNC console in the browser, or `-UrlOnly` |
+| `Get/Set/Remove-PVEStorageContent` | ISOs, templates, backups and disk images on storage; notes and protection |
+| `Import-PVEStorageContent` | Store an ISO or template from a URL (the node downloads it) or a local file (upload) |
+| `Get-PVEApplianceTemplate` / `Save-PVEApplianceTemplate` | Container templates from the PVE catalogue |
+| `Backup-PVEVM` / `Backup-PVEContainer` | vzdump backups; writes the new backup objects |
+| `Get-PVEBackup` / `Restore-PVEBackup` | List backups (`-Latest` per guest); restore to the same or a new ID |
 | `Invoke-PVEApi` | Call any API endpoint directly, for anything not yet wrapped |
 
 Power cmdlets take names (wildcards allowed), `-VMId`, or piped objects. They wait for the PVE task to
@@ -122,6 +128,9 @@ Set-PVEVMCloudInit -VMId 100 -User debian -SshPublicKey (Get-Content ~/.ssh/id_e
 Get-PVEVM 'web*' | New-PVEVMSnapshot -Snapshot before-upgrade
 Restore-PVEVMSnapshot -VMId 100 -Snapshot before-upgrade -Confirm:$false
 Get-PVEVM 'web*' | Invoke-PVEVMScript -ScriptText 'systemctl is-active nginx' | Select-Object VMName, ExitCode, StdOut
+Get-PVEApplianceTemplate 'debian-13-standard*' | Save-PVEApplianceTemplate -Storage local
+Get-PVEVM web01 | Backup-PVEVM -Storage local -Mode snapshot
+Get-PVEBackup -VMId 100 -Latest | Restore-PVEBackup -VMId 150 -Unique
 Get-PVEVM 'scratch-*' | Stop-PVEVM -Confirm:$false | Remove-PVEVM -Purge -Confirm:$false
 Invoke-PVEApi -Path /cluster/resources -Parameters @{ type = 'vm' }
 Invoke-PVEApi -Method POST -Path /nodes/pve01/qemu/9001/status/start -WhatIf
@@ -138,7 +147,7 @@ $env:PVEPS_TEST_SERVER = 'pve01.example.com'
 $env:PVEPS_TEST_TOKEN_ID = 'pveps@pve!readonly'
 $env:PVEPS_TEST_TOKEN_SECRET = '...'
 $env:PVEPS_TEST_SKIPCERT = '1'
-Invoke-Pester ./tests -TagFilter Integration -ExcludeTagFilter Power, Lifecycle, Hardware, Snapshot, Agent -Output Detailed
+Invoke-Pester ./tests -TagFilter Integration -ExcludeTagFilter Power, Lifecycle, Hardware, Snapshot, Agent, Storage -Output Detailed
 ```
 
 The read-only tests need a token with audit rights. With privilege separation a token gets the
@@ -173,6 +182,14 @@ needs `SDN.Use` on the bridge; on PVE 8 and later, plain bridges sit in the `loc
 `pveum acl modify /sdn/zones/localnetwork --users pveps@pve --tokens 'pveps@pve!write' --roles PVESDNUser`
 grants it (unverified on 9.2; the create test fails with a permission error if not).
 
+The storage tests write ISOs and backups to `PVEPS_TEST_FILE_STORAGE`. According to the API schema,
+uploading and saving templates need Datastore.AllocateTemplate on that storage and deleting an ISO
+needs Datastore.Allocate, so it needs a stronger role than the disk storage; on a throwaway node,
+`pveum acl modify /storage/local --users pveps@pve --tokens 'pveps@pve!write' --roles PVEDatastoreAdmin`.
+Downloading by URL (`PVEPS_TEST_ISO_URL`) also needs Sys.AccessNetwork on the node, which no built-in
+role is known to grant here (unverified); a custom role covers it:
+`pveum role add PVEPSNetwork --privs Sys.AccessNetwork`, then grant it on `/nodes/<node>`.
+
 The power tests also need one test VM in the pool (choose a free VMID). It has no disk or OS, which is
 enough for start, stop, reset, suspend and resume. Clean shutdown and reboot need a guest OS; set
 `PVEPS_TEST_POWER_GUESTOS=1` if the test VM has one.
@@ -194,6 +211,8 @@ Invoke-Pester ./tests/Integration/Hardware.Integration.Tests.ps1 -Output Detaile
 Invoke-Pester ./tests/Integration/Snapshot.Integration.Tests.ps1 -Output Detailed
 # Needs PVEPS_TEST_AGENT_VMID: a running pveps-test* VM in the pool with the guest agent installed.
 Invoke-Pester ./tests/Integration/Agent.Integration.Tests.ps1 -Output Detailed
+# Needs PVEPS_TEST_FILE_STORAGE: a storage for ISOs and backups (see below for its rights).
+Invoke-Pester ./tests/Integration/Storage.Integration.Tests.ps1 -Output Detailed
 ```
 
 The header of each test file lists every variable it reads.

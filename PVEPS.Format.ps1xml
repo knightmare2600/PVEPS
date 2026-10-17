@@ -481,5 +481,63 @@
         </TableRowEntries>
       </TableControl>
     </View>
+    <View>
+      <Name>PVEPS.StorageContent</Name>
+      <ViewSelectedBy>
+        <TypeName>PVEPS.StorageContent</TypeName>
+      </ViewSelectedBy>
+      <TableControl>
+        <TableHeaders>
+          <TableColumnHeader><Label>Volume</Label></TableColumnHeader>
+          <TableColumnHeader><Label>Node</Label></TableColumnHeader>
+          <TableColumnHeader><Label>Content</Label></TableColumnHeader>
+          <TableColumnHeader><Label>Format</Label></TableColumnHeader>
+          <TableColumnHeader><Label>SizeGB</Label></TableColumnHeader>
+          <TableColumnHeader><Label>Created</Label></TableColumnHeader>
+          <TableColumnHeader><Label>VMId</Label></TableColumnHeader>
+          <TableColumnHeader><Label>Protected</Label></TableColumnHeader>
+        </TableHeaders>
+        <TableRowEntries>
+          <TableRowEntry>
+            <TableColumnItems>
+              <TableColumnItem><PropertyName>Volume</PropertyName></TableColumnItem>
+              <TableColumnItem><PropertyName>Node</PropertyName></TableColumnItem>
+              <TableColumnItem><ScriptBlock>$_.Content -join ','</ScriptBlock></TableColumnItem>
+              <TableColumnItem><PropertyName>Format</PropertyName></TableColumnItem>
+              <TableColumnItem><PropertyName>SizeGB</PropertyName></TableColumnItem>
+              <TableColumnItem><PropertyName>Created</PropertyName></TableColumnItem>
+              <TableColumnItem><PropertyName>VMId</PropertyName></TableColumnItem>
+              <TableColumnItem><PropertyName>Protected</PropertyName></TableColumnItem>
+            </TableColumnItems>
+          </TableRowEntry>
+        </TableRowEntries>
+      </TableControl>
+    </View>
+    <View>
+      <Name>PVEPS.ApplianceTemplate</Name>
+      <ViewSelectedBy>
+        <TypeName>PVEPS.ApplianceTemplate</TypeName>
+      </ViewSelectedBy>
+      <TableControl>
+        <TableHeaders>
+          <TableColumnHeader><Label>Template</Label></TableColumnHeader>
+          <TableColumnHeader><Label>Section</Label></TableColumnHeader>
+          <TableColumnHeader><Label>OS</Label></TableColumnHeader>
+          <TableColumnHeader><Label>Version</Label></TableColumnHeader>
+          <TableColumnHeader><Label>Headline</Label></TableColumnHeader>
+        </TableHeaders>
+        <TableRowEntries>
+          <TableRowEntry>
+            <TableColumnItems>
+              <TableColumnItem><PropertyName>Template</PropertyName></TableColumnItem>
+              <TableColumnItem><PropertyName>Section</PropertyName></TableColumnItem>
+              <TableColumnItem><PropertyName>OS</PropertyName></TableColumnItem>
+              <TableColumnItem><PropertyName>Version</PropertyName></TableColumnItem>
+              <TableColumnItem><PropertyName>Headline</PropertyName></TableColumnItem>
+            </TableColumnItems>
+          </TableRowEntry>
+        </TableRowEntries>
+      </TableControl>
+    </View>
   </ViewDefinitions>
 </Configuration>

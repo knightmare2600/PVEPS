@@ -28,6 +28,9 @@
 #v2.0.0  2026-10-17  RM  Phase 5 snapshots: Get/New/Set/Remove/Restore-PVEVMSnapshot and -PVEContainerSnapshot.
 #v2.0.0  2026-10-17  RM  Phase 6 guest agent and console: Get-PVEVMGuest, Invoke-PVEVMScript, Copy-PVEVMGuestFile,
 #        Open-PVEVMConsole, Open-PVEContainerConsole.
+#v2.0.0  2026-10-17  RM  Phase 7 storage and backups: Get/Set/Remove/Import-PVEStorageContent,
+#        Get/Save-PVEApplianceTemplate, Backup-PVEVM, Backup-PVEContainer, Get-PVEBackup, Restore-PVEBackup.
+#        Invoke-PVERequest can send multipart uploads.
 #
 #--------------------------------------------------------------------------------------------------------------
 

@@ -9,6 +9,8 @@
   CompatiblePSEditions = @('Core')
   FormatsToProcess     = @('PVEPS.Format.ps1xml')
   FunctionsToExport    = @(
+    'Backup-PVEContainer'
+    'Backup-PVEVM'
     'Connect-PVE'
     'ConvertTo-PVEContainerTemplate'
     'ConvertTo-PVEVMTemplate'
@@ -16,6 +18,8 @@
     'Copy-PVEVM'
     'Copy-PVEVMGuestFile'
     'Disconnect-PVE'
+    'Get-PVEApplianceTemplate'
+    'Get-PVEBackup'
     'Get-PVEConnection'
     'Get-PVEContainer'
     'Get-PVEContainerNetworkAdapter'
@@ -62,9 +66,11 @@
     'Restart-PVEContainer'
     'Restart-PVEVM'
     'Restart-PVEVMGuest'
+    'Restore-PVEBackup'
     'Restore-PVEContainerSnapshot'
     'Restore-PVEVMSnapshot'
     'Resume-PVEVM'
+    'Save-PVEApplianceTemplate'
     'Set-PVEContainer'
     'Set-PVEContainerNetworkAdapter'
     'Set-PVEContainerSnapshot'
