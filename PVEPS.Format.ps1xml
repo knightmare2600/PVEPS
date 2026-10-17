@@ -427,5 +427,59 @@
         </TableRowEntries>
       </TableControl>
     </View>
+    <View>
+      <Name>PVEPS.VMGuest</Name>
+      <ViewSelectedBy>
+        <TypeName>PVEPS.VMGuest</TypeName>
+      </ViewSelectedBy>
+      <TableControl>
+        <TableHeaders>
+          <TableColumnHeader><Label>VMId</Label></TableColumnHeader>
+          <TableColumnHeader><Label>VMName</Label></TableColumnHeader>
+          <TableColumnHeader><Label>State</Label></TableColumnHeader>
+          <TableColumnHeader><Label>HostName</Label></TableColumnHeader>
+          <TableColumnHeader><Label>OSName</Label></TableColumnHeader>
+          <TableColumnHeader><Label>IPAddress</Label></TableColumnHeader>
+        </TableHeaders>
+        <TableRowEntries>
+          <TableRowEntry>
+            <TableColumnItems>
+              <TableColumnItem><PropertyName>VMId</PropertyName></TableColumnItem>
+              <TableColumnItem><PropertyName>VMName</PropertyName></TableColumnItem>
+              <TableColumnItem><PropertyName>State</PropertyName></TableColumnItem>
+              <TableColumnItem><PropertyName>HostName</PropertyName></TableColumnItem>
+              <TableColumnItem><PropertyName>OSName</PropertyName></TableColumnItem>
+              <TableColumnItem><ScriptBlock>$_.IPAddress -join ','</ScriptBlock></TableColumnItem>
+            </TableColumnItems>
+          </TableRowEntry>
+        </TableRowEntries>
+      </TableControl>
+    </View>
+    <View>
+      <Name>PVEPS.VMScriptResult</Name>
+      <ViewSelectedBy>
+        <TypeName>PVEPS.VMScriptResult</TypeName>
+      </ViewSelectedBy>
+      <TableControl>
+        <TableHeaders>
+          <TableColumnHeader><Label>VMId</Label></TableColumnHeader>
+          <TableColumnHeader><Label>VMName</Label></TableColumnHeader>
+          <TableColumnHeader><Label>ExitCode</Label></TableColumnHeader>
+          <TableColumnHeader><Label>StdOut</Label></TableColumnHeader>
+          <TableColumnHeader><Label>StdErr</Label></TableColumnHeader>
+        </TableHeaders>
+        <TableRowEntries>
+          <TableRowEntry>
+            <TableColumnItems>
+              <TableColumnItem><PropertyName>VMId</PropertyName></TableColumnItem>
+              <TableColumnItem><PropertyName>VMName</PropertyName></TableColumnItem>
+              <TableColumnItem><PropertyName>ExitCode</PropertyName></TableColumnItem>
+              <TableColumnItem><PropertyName>StdOut</PropertyName></TableColumnItem>
+              <TableColumnItem><PropertyName>StdErr</PropertyName></TableColumnItem>
+            </TableColumnItems>
+          </TableRowEntry>
+        </TableRowEntries>
+      </TableControl>
+    </View>
   </ViewDefinitions>
 </Configuration>

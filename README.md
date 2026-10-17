@@ -6,8 +6,8 @@ Originally written by Einar Stenberg (2018). Version 2 is a rewrite for PowerShe
 and is a clean break from the v1 cmdlets.
 
 > **Status:** work in progress. Phase 0 (connection, authentication, request handling, tasks),
-> Phase 1 (inventory), Phase 2 (power), Phase 3 (lifecycle), Phase 4 (hardware) and Phase 5
-> (snapshots) are in place. Guest-agent, storage/backup and statistics cmdlets follow in later phases. Clustered PVE is not yet
+> Phase 1 (inventory), Phase 2 (power), Phase 3 (lifecycle), Phase 4 (hardware), Phase 5 (snapshots)
+> and Phase 6 (guest agent and console) are in place. Storage/backup and statistics cmdlets follow. Clustered PVE is not yet
 > supported; development and testing target a standalone node.
 
 ## Requirements
@@ -75,6 +75,10 @@ runs out. Users with two-factor authentication enabled must use an API token.
 | `Get/New/Set/Remove-PVEContainerNetworkAdapter` | Container network adapters and their addresses |
 | `Get/New/Set/Remove/Restore-PVEVMSnapshot` | VM snapshots (optionally with RAM); roll back |
 | `Get/New/Set/Remove/Restore-PVEContainerSnapshot` | Container snapshots; roll back |
+| `Get-PVEVMGuest` | OS, host name and IP addresses reported by the QEMU guest agent |
+| `Invoke-PVEVMScript` | Run a command or script inside a VM through the guest agent |
+| `Copy-PVEVMGuestFile` | Copy a file into (up to 45 KiB) or out of a VM through the guest agent |
+| `Open-PVEVMConsole` / `Open-PVEContainerConsole` | Open the noVNC console in the browser, or `-UrlOnly` |
 | `Invoke-PVEApi` | Call any API endpoint directly, for anything not yet wrapped |
 
 Power cmdlets take names (wildcards allowed), `-VMId`, or piped objects. They wait for the PVE task to
@@ -117,6 +121,7 @@ Set-PVEVMHardDisk -VMId 100 -Device scsi0 -SizeGB 64
 Set-PVEVMCloudInit -VMId 100 -User debian -SshPublicKey (Get-Content ~/.ssh/id_ed25519.pub) -IPAddress dhcp -Storage local-lvm
 Get-PVEVM 'web*' | New-PVEVMSnapshot -Snapshot before-upgrade
 Restore-PVEVMSnapshot -VMId 100 -Snapshot before-upgrade -Confirm:$false
+Get-PVEVM 'web*' | Invoke-PVEVMScript -ScriptText 'systemctl is-active nginx' | Select-Object VMName, ExitCode, StdOut
 Get-PVEVM 'scratch-*' | Stop-PVEVM -Confirm:$false | Remove-PVEVM -Purge -Confirm:$false
 Invoke-PVEApi -Path /cluster/resources -Parameters @{ type = 'vm' }
 Invoke-PVEApi -Method POST -Path /nodes/pve01/qemu/9001/status/start -WhatIf
@@ -133,7 +138,7 @@ $env:PVEPS_TEST_SERVER = 'pve01.example.com'
 $env:PVEPS_TEST_TOKEN_ID = 'pveps@pve!readonly'
 $env:PVEPS_TEST_TOKEN_SECRET = '...'
 $env:PVEPS_TEST_SKIPCERT = '1'
-Invoke-Pester ./tests -TagFilter Integration -ExcludeTagFilter Power, Lifecycle, Hardware, Snapshot -Output Detailed
+Invoke-Pester ./tests -TagFilter Integration -ExcludeTagFilter Power, Lifecycle, Hardware, Snapshot, Agent -Output Detailed
 ```
 
 The read-only tests need a token with audit rights. With privilege separation a token gets the
@@ -187,6 +192,8 @@ Invoke-Pester ./tests/Integration/Power.Integration.Tests.ps1 -Output Detailed
 Invoke-Pester ./tests/Integration/Lifecycle.Integration.Tests.ps1 -Output Detailed
 Invoke-Pester ./tests/Integration/Hardware.Integration.Tests.ps1 -Output Detailed
 Invoke-Pester ./tests/Integration/Snapshot.Integration.Tests.ps1 -Output Detailed
+# Needs PVEPS_TEST_AGENT_VMID: a running pveps-test* VM in the pool with the guest agent installed.
+Invoke-Pester ./tests/Integration/Agent.Integration.Tests.ps1 -Output Detailed
 ```
 
 The header of each test file lists every variable it reads.

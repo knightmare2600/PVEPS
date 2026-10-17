@@ -26,6 +26,8 @@
 #        Get/Set-PVEVMCloudInit, Get/New/Set/Remove-PVEContainerVolume and -PVEContainerNetworkAdapter.
 #        Configuration changes send the digest of the configuration they were built from.
 #v2.0.0  2026-10-17  RM  Phase 5 snapshots: Get/New/Set/Remove/Restore-PVEVMSnapshot and -PVEContainerSnapshot.
+#v2.0.0  2026-10-17  RM  Phase 6 guest agent and console: Get-PVEVMGuest, Invoke-PVEVMScript, Copy-PVEVMGuestFile,
+#        Open-PVEVMConsole, Open-PVEContainerConsole.
 #
 #--------------------------------------------------------------------------------------------------------------
 
