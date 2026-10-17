@@ -395,5 +395,37 @@
         </TableRowEntries>
       </TableControl>
     </View>
+    <View>
+      <Name>PVEPS.Snapshot</Name>
+      <ViewSelectedBy>
+        <TypeName>PVEPS.Snapshot</TypeName>
+      </ViewSelectedBy>
+      <TableControl>
+        <TableHeaders>
+          <TableColumnHeader><Label>VMId</Label></TableColumnHeader>
+          <TableColumnHeader><Label>VMName</Label></TableColumnHeader>
+          <TableColumnHeader><Label>Snapshot</Label></TableColumnHeader>
+          <TableColumnHeader><Label>Created</Label></TableColumnHeader>
+          <TableColumnHeader><Label>IsCurrent</Label></TableColumnHeader>
+          <TableColumnHeader><Label>IncludesMemory</Label></TableColumnHeader>
+          <TableColumnHeader><Label>Parent</Label></TableColumnHeader>
+          <TableColumnHeader><Label>Description</Label></TableColumnHeader>
+        </TableHeaders>
+        <TableRowEntries>
+          <TableRowEntry>
+            <TableColumnItems>
+              <TableColumnItem><PropertyName>VMId</PropertyName></TableColumnItem>
+              <TableColumnItem><PropertyName>VMName</PropertyName></TableColumnItem>
+              <TableColumnItem><PropertyName>Snapshot</PropertyName></TableColumnItem>
+              <TableColumnItem><PropertyName>Created</PropertyName></TableColumnItem>
+              <TableColumnItem><PropertyName>IsCurrent</PropertyName></TableColumnItem>
+              <TableColumnItem><PropertyName>IncludesMemory</PropertyName></TableColumnItem>
+              <TableColumnItem><PropertyName>Parent</PropertyName></TableColumnItem>
+              <TableColumnItem><PropertyName>Description</PropertyName></TableColumnItem>
+            </TableColumnItems>
+          </TableRowEntry>
+        </TableRowEntries>
+      </TableControl>
+    </View>
   </ViewDefinitions>
 </Configuration>

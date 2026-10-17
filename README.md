@@ -6,8 +6,8 @@ Originally written by Einar Stenberg (2018). Version 2 is a rewrite for PowerShe
 and is a clean break from the v1 cmdlets.
 
 > **Status:** work in progress. Phase 0 (connection, authentication, request handling, tasks),
-> Phase 1 (inventory), Phase 2 (power), Phase 3 (lifecycle) and Phase 4 (hardware) are in place.
-> Snapshot, guest-agent, storage/backup and statistics cmdlets follow in later phases. Clustered PVE is not yet
+> Phase 1 (inventory), Phase 2 (power), Phase 3 (lifecycle), Phase 4 (hardware) and Phase 5
+> (snapshots) are in place. Guest-agent, storage/backup and statistics cmdlets follow in later phases. Clustered PVE is not yet
 > supported; development and testing target a standalone node.
 
 ## Requirements
@@ -73,6 +73,8 @@ runs out. Users with two-factor authentication enabled must use an API token.
 | `Get-PVEVMCloudInit` / `Set-PVEVMCloudInit` | cloud-init user, SSH keys, IP and DNS settings; adds the drive |
 | `Get/New/Set/Remove-PVEContainerVolume` | Container root file system and mount points (volumes or bind mounts) |
 | `Get/New/Set/Remove-PVEContainerNetworkAdapter` | Container network adapters and their addresses |
+| `Get/New/Set/Remove/Restore-PVEVMSnapshot` | VM snapshots (optionally with RAM); roll back |
+| `Get/New/Set/Remove/Restore-PVEContainerSnapshot` | Container snapshots; roll back |
 | `Invoke-PVEApi` | Call any API endpoint directly, for anything not yet wrapped |
 
 Power cmdlets take names (wildcards allowed), `-VMId`, or piped objects. They wait for the PVE task to
@@ -113,6 +115,8 @@ Move-PVEVM web01 -Storage fast-ssd -DeleteSource
 Get-PVEVM db01 | New-PVEVMHardDisk -SizeGB 200 -Storage local-lvm -SSD -Discard
 Set-PVEVMHardDisk -VMId 100 -Device scsi0 -SizeGB 64
 Set-PVEVMCloudInit -VMId 100 -User debian -SshPublicKey (Get-Content ~/.ssh/id_ed25519.pub) -IPAddress dhcp -Storage local-lvm
+Get-PVEVM 'web*' | New-PVEVMSnapshot -Snapshot before-upgrade
+Restore-PVEVMSnapshot -VMId 100 -Snapshot before-upgrade -Confirm:$false
 Get-PVEVM 'scratch-*' | Stop-PVEVM -Confirm:$false | Remove-PVEVM -Purge -Confirm:$false
 Invoke-PVEApi -Path /cluster/resources -Parameters @{ type = 'vm' }
 Invoke-PVEApi -Method POST -Path /nodes/pve01/qemu/9001/status/start -WhatIf
@@ -129,7 +133,7 @@ $env:PVEPS_TEST_SERVER = 'pve01.example.com'
 $env:PVEPS_TEST_TOKEN_ID = 'pveps@pve!readonly'
 $env:PVEPS_TEST_TOKEN_SECRET = '...'
 $env:PVEPS_TEST_SKIPCERT = '1'
-Invoke-Pester ./tests -TagFilter Integration -ExcludeTagFilter Power, Lifecycle, Hardware -Output Detailed
+Invoke-Pester ./tests -TagFilter Integration -ExcludeTagFilter Power, Lifecycle, Hardware, Snapshot -Output Detailed
 ```
 
 The read-only tests need a token with audit rights. With privilege separation a token gets the
@@ -145,11 +149,11 @@ The header of `tests/Integration/Connection.Integration.Tests.ps1` lists every v
 
 ### Write tests
 
-The power, lifecycle and hardware tests change state, so they use a separate token whose rights cover
-only a dedicated pool and the storage the tests use; PVE refuses anything else. These commands add to
-the `pveps@pve` user created above. The tests also refuse any guest not in that pool or not named
-`pveps-test*`. The lifecycle and hardware tests create every guest they touch and delete them again at
-the end. On the node, as root:
+The power, lifecycle, hardware and snapshot tests change state, so they use a separate token whose
+rights cover only a dedicated pool and the storage the tests use; PVE refuses anything else. These
+commands add to the `pveps@pve` user created above. The tests also refuse any guest not in that pool or
+not named `pveps-test*`. The lifecycle, hardware and snapshot tests create every guest they touch and
+delete them again at the end. On the node, as root:
 
 ```
 pveum pool add pveps-test --comment "PVEPS integration tests"
@@ -182,6 +186,7 @@ $env:PVEPS_TEST_STORAGE = 'local-lvm'
 Invoke-Pester ./tests/Integration/Power.Integration.Tests.ps1 -Output Detailed
 Invoke-Pester ./tests/Integration/Lifecycle.Integration.Tests.ps1 -Output Detailed
 Invoke-Pester ./tests/Integration/Hardware.Integration.Tests.ps1 -Output Detailed
+Invoke-Pester ./tests/Integration/Snapshot.Integration.Tests.ps1 -Output Detailed
 ```
 
 The header of each test file lists every variable it reads.
